@@ -104,10 +104,12 @@ export interface SettingsState {
   landing: LandingSettings;
   customLogo: string | null;
   inboxMessages: InboxMessage[];
+  animationsEnabled: boolean;
 
   setThemeMode: (mode: ThemeMode) => void;
   applyPreset: (preset: ThemePreset) => void;
   setCustomLogo: (logo: string | null) => void;
+  setAnimationsEnabled: (enabled: boolean) => void;
   setColorToken: (mode: "light" | "dark", token: keyof ColorTokens, value: string) => boolean;
   setShape: (radius: number, shadow: "none" | "soft" | "medium", density: "comfortable" | "compact") => void;
   setFontSettings: (baseSize: number, pairing: "rethink-helvetica" | "helvetica-only" | "rethink-only") => void;
@@ -334,6 +336,7 @@ function applyCssTokensToDom(state: {
   darkColors: ColorTokens;
   cornerRadius: number;
   shadowMode: string;
+  animationsEnabled?: boolean;
 }) {
   if (typeof document === "undefined") return;
 
@@ -348,6 +351,12 @@ function applyCssTokensToDom(state: {
     root.classList.add("dark");
   } else {
     root.classList.remove("dark");
+  }
+
+  if (state.animationsEnabled === false) {
+    root.classList.add("low-power-mode");
+  } else {
+    root.classList.remove("low-power-mode");
   }
 
   const colors = isDark ? state.darkColors : state.lightColors;
@@ -425,7 +434,8 @@ function saveState(state: SettingsState) {
       simulator: state.simulator,
       landing: state.landing,
       customLogo: state.customLogo,
-      inboxMessages: state.inboxMessages
+      inboxMessages: state.inboxMessages,
+      animationsEnabled: state.animationsEnabled
     });
     localStorage.setItem(STORAGE_KEY, serialized);
   } catch {
@@ -457,6 +467,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   landing: saved.landing ? { ...DEFAULT_LANDING_CONFIG, ...saved.landing } : { ...DEFAULT_LANDING_CONFIG },
   customLogo: saved.customLogo || null,
   inboxMessages: saved.inboxMessages && Array.isArray(saved.inboxMessages) ? saved.inboxMessages : [...DEFAULT_INBOX_MESSAGES],
+  animationsEnabled: saved.animationsEnabled !== undefined ? saved.animationsEnabled : true,
+
+  setAnimationsEnabled: (enabled) => {
+    set({ animationsEnabled: enabled });
+    const s = get();
+    applyCssTokensToDom(s);
+    saveState(s);
+  },
 
   addInboxMessage: (msg) => {
     const newMsg: InboxMessage = {

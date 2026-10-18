@@ -24,6 +24,7 @@ export const LandingPage: React.FC = () => {
   const landing = useSettingsStore((s) => s.landing);
   const activePreset = useSettingsStore((s) => s.activePreset);
   const themeMode = useSettingsStore((s) => s.themeMode);
+  const animationsEnabled = useSettingsStore((s) => s.animationsEnabled);
   const applyPreset = useSettingsStore((s) => s.applyPreset);
   const setThemeMode = useSettingsStore((s) => s.setThemeMode);
   const { dataset } = useDataStore();
@@ -35,7 +36,6 @@ export const LandingPage: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [lightPos, setLightPos] = useState({ x: 50, y: 38, active: false });
-  const [titleAngle, setTitleAngle] = useState(0);
   const [titleProximity, setTitleProximity] = useState(0);
   const [titleOffset, setTitleOffset] = useState({ dx: 0, dy: 0 });
 
@@ -45,6 +45,7 @@ export const LandingPage: React.FC = () => {
   const totalOrders = dataset.orders.length;
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!animationsEnabled) return;
     const el = heroRef.current;
     if (!el) return;
 
@@ -59,25 +60,23 @@ export const LandingPage: React.FC = () => {
       const titleCenterY = tRect.top + tRect.height / 2;
       const dx = e.clientX - titleCenterX;
       const dy = e.clientY - titleCenterY;
-      const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
       const dist = Math.hypot(dx, dy);
       const prox = Math.max(0, Math.min(1, 1 - dist / 800));
 
-      setTitleAngle(angle);
       setTitleProximity(prox);
       setTitleOffset({ dx, dy });
     }
-  }, []);
+  }, [animationsEnabled]);
 
   const handlePointerLeave = useCallback(() => {
     setLightPos({ x: 50, y: 38, active: false });
-    setTitleAngle(0);
     setTitleProximity(0);
     setTitleOffset({ dx: 0, dy: 0 });
   }, []);
 
-  // Ambient gentle pulse when idle
+  // Ambient gentle pulse when idle (skipped in low-power mode)
   useEffect(() => {
+    if (!animationsEnabled) return;
     let frameId: number;
     let time = 0;
     const animateIdle = () => {
@@ -91,31 +90,38 @@ export const LandingPage: React.FC = () => {
     };
     frameId = requestAnimationFrame(animateIdle);
     return () => cancelAnimationFrame(frameId);
-  }, [lightPos.active]);
+  }, [animationsEnabled, lightPos.active]);
 
   const gradientStyle: React.CSSProperties = {
     backgroundColor: landing.stop1,
-    backgroundImage: `
-      radial-gradient(circle 680px at ${lightPos.x}% ${lightPos.y}%, rgba(255, 255, 255, 0.44) 0%, rgba(255, 255, 255, 0.16) 28%, rgba(255, 255, 255, 0.04) 52%, transparent 74%),
-      radial-gradient(circle 850px at ${lightPos.x}% ${lightPos.y}%, ${landing.stop2} 0%, transparent 68%),
-      radial-gradient(circle 950px at ${100 - lightPos.x * 0.35}% ${100 - lightPos.y * 0.35}%, ${landing.stop3} 0%, transparent 62%),
-      radial-gradient(circle 600px at ${85 - (lightPos.x - 50) * 0.2}% ${15 - (lightPos.y - 50) * 0.2}%, ${landing.stop4} 0%, transparent 50%)
-    `,
+    backgroundImage: animationsEnabled
+      ? `
+        radial-gradient(circle 680px at ${lightPos.x}% ${lightPos.y}%, rgba(255, 255, 255, 0.44) 0%, rgba(255, 255, 255, 0.16) 28%, rgba(255, 255, 255, 0.04) 52%, transparent 74%),
+        radial-gradient(circle 850px at ${lightPos.x}% ${lightPos.y}%, ${landing.stop2} 0%, transparent 68%),
+        radial-gradient(circle 950px at ${100 - lightPos.x * 0.35}% ${100 - lightPos.y * 0.35}%, ${landing.stop3} 0%, transparent 62%),
+        radial-gradient(circle 600px at ${85 - (lightPos.x - 50) * 0.2}% ${15 - (lightPos.y - 50) * 0.2}%, ${landing.stop4} 0%, transparent 50%)
+      `
+      : `
+        radial-gradient(circle at 10% 45%, ${landing.stop2} 0%, transparent 55%),
+        radial-gradient(circle at 90% 50%, ${landing.stop3} 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, ${landing.stop4} 0%, transparent 45%)
+      `,
     transition: lightPos.active ? "none" : "background-image 0.6s ease-out"
   };
 
   const isMinimaBeige = activePreset === "minima-beige";
-  const reactiveTitleStyle: React.CSSProperties = {
-    background: isMinimaBeige
-      ? `linear-gradient(${titleAngle + 90}deg, #FFFFFF 0%, #FAF0E6 24%, #EED9C4 50%, #D9B99B 74%, #8E5630 100%)`
-      : `linear-gradient(${titleAngle + 90}deg, #FFFFFF 0%, rgba(255, 255, 255, ${(0.92 + titleProximity * 0.08).toFixed(2)}) 32%, rgba(238, 217, 196, ${(0.82 + titleProximity * 0.18).toFixed(2)}) 65%, rgba(185, 199, 211, 0.85) 100%)`,
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    filter: `drop-shadow(${(-titleOffset.dx * 0.02).toFixed(1)}px ${(-titleOffset.dy * 0.02 + 4).toFixed(1)}px ${(4 + titleProximity * 6).toFixed(1)}px rgba(0, 0, 0, ${(0.15 + titleProximity * 0.1).toFixed(2)}))`,
-    transform: `perspective(900px) rotateX(${(titleOffset.dy * 0.012).toFixed(2)}deg) rotateY(${(-titleOffset.dx * 0.012).toFixed(2)}deg) scale(${(1 + titleProximity * 0.02).toFixed(3)})`,
-    transition: lightPos.active ? "transform 0.08s ease-out, filter 0.1s ease-out" : "transform 0.5s ease-out, filter 0.5s ease-out",
-    willChange: "transform, filter"
-  };
+  const reactiveTitleStyle: React.CSSProperties = animationsEnabled
+    ? {
+        color: isMinimaBeige ? "#FAF0E6" : "#FFFFFF",
+        transform: `perspective(900px) rotateX(${(titleOffset.dy * 0.012).toFixed(2)}deg) rotateY(${(-titleOffset.dx * 0.012).toFixed(2)}deg) scale(${(1 + titleProximity * 0.02).toFixed(3)})`,
+        textShadow: `${(-titleOffset.dx * 0.03).toFixed(1)}px ${(-titleOffset.dy * 0.03 + 3).toFixed(1)}px ${(8 + titleProximity * 14).toFixed(1)}px rgba(0, 0, 0, 0.26), 0 0 ${(titleProximity * 28).toFixed(1)}px rgba(255, 255, 255, 0.55)`,
+        transition: lightPos.active ? "transform 0.08s ease-out, text-shadow 0.1s ease-out" : "transform 0.5s ease-out, text-shadow 0.5s ease-out",
+        willChange: "transform, text-shadow"
+      }
+    : {
+        color: isMinimaBeige ? "#FAF0E6" : "#FFFFFF",
+        textShadow: "0 4px 16px rgba(0, 0, 0, 0.2)"
+      };
 
   const capabilities = [
     {
@@ -444,7 +450,7 @@ export const LandingPage: React.FC = () => {
             <h1
               ref={titleRef}
               style={reactiveTitleStyle}
-              className="text-4xl sm:text-6xl md:text-8xl font-display font-bold tracking-tight uppercase transition-all duration-75 cursor-default drop-shadow-sm"
+              className="text-4xl sm:text-6xl md:text-8xl font-display font-black tracking-tight uppercase transition-all duration-75 cursor-default select-none"
             >
               {landing.productName}
             </h1>

@@ -61,12 +61,21 @@ export const AppLayout: React.FC = () => {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="lg:hidden flex items-center justify-between px-4 sm:px-6 py-3.5 bg-sidebar/95 backdrop-blur-md border-b border-hairline sticky top-0 z-20">
-          <div className="flex items-center gap-2.5">
-            <BrandLogo size={22} />
-            <span className="font-display font-semibold text-xs tracking-widest uppercase truncate max-w-[130px]">
-              {productName}
-            </span>
+        <div className="lg:hidden flex items-center justify-between px-4 sm:px-6 py-3 bg-sidebar/95 backdrop-blur-md border-b border-hairline sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-1.5 rounded-full hover:bg-canvas text-text-secondary border border-hairline flex items-center justify-center"
+              aria-label="Open navigation menu"
+            >
+              <List size={20} />
+            </button>
+            <div className="flex items-center gap-2">
+              <BrandLogo size={22} />
+              <span className="font-display font-semibold text-xs tracking-widest uppercase truncate max-w-[140px]">
+                {productName}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -83,13 +92,6 @@ export const AppLayout: React.FC = () => {
               aria-label="Toggle theme mode"
             >
               {themeMode === "dark" ? "🌙" : "☀️"}
-            </button>
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="p-1.5 rounded-full hover:bg-canvas text-text-secondary border border-hairline"
-              aria-label="Open navigation menu"
-            >
-              <List size={18} />
             </button>
           </div>
         </div>

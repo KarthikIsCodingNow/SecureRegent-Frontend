@@ -277,8 +277,13 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed top-0 right-0 bottom-0 w-full sm:w-[580px] bg-card shadow-2xl z-50 flex flex-col rounded-l-[24px] outline-none animate-in slide-in-from-right duration-250 ease-out border-l border-hairline">
+        <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity animate-in fade-in duration-200" />
+        <Dialog.Content className="fixed top-0 left-0 bottom-0 w-full sm:w-[580px] lg:w-[620px] bg-card shadow-2xl z-50 flex flex-col sm:rounded-r-[28px] outline-none animate-in slide-in-from-left duration-300 ease-out border-r border-hairline">
+          {/* iOS sheet handle for mobile */}
+          <div className="pt-2.5 pb-0 flex justify-center sm:hidden">
+            <div className="w-12 h-1 bg-text-tertiary/30 rounded-full" />
+          </div>
+
           {/* Header */}
           <div className="p-6 border-b border-hairline flex items-start justify-between gap-4 shrink-0 bg-card">
             <div>

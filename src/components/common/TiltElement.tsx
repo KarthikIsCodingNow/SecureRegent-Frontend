@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback } from "react";
+import { useSettingsStore } from "../../store/settingsStore";
 
 interface TiltElementProps extends React.HTMLAttributes<HTMLElement> {
   as?: React.ElementType;
@@ -26,6 +27,7 @@ export const TiltElement: React.FC<TiltElementProps> = ({
   children,
   ...restProps
 }) => {
+  const animationsEnabled = useSettingsStore((s) => s.animationsEnabled);
   const elementRef = useRef<HTMLElement | null>(null);
   const [transformStyle, setTransformStyle] = useState<React.CSSProperties>({
     transform: "perspective(700px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale(1)",
@@ -42,6 +44,7 @@ export const TiltElement: React.FC<TiltElementProps> = ({
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
+      if (!animationsEnabled) return;
       const el = elementRef.current;
       if (!el) return;
 

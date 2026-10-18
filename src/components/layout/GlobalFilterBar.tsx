@@ -51,7 +51,7 @@ export const GlobalFilterBar: React.FC<GlobalFilterBarProps> = ({
   )}`;
 
   return (
-    <div className="flex flex-col gap-1.5 mb-6">
+    <div className="flex flex-col gap-1.5 mb-6 no-print">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <TimeframePopover

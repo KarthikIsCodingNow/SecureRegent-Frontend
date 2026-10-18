@@ -28,7 +28,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 no-print">
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
             <button

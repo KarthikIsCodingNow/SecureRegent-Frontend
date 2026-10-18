@@ -421,6 +421,24 @@ export const AdminPage: React.FC = () => {
                     ))}
                   </div>
                 </div>
+
+                <div className="pt-3 border-t border-hairline flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-text-primary block">
+                      Dynamic Lighting & 3D Tilt Animations
+                    </span>
+                    <span className="text-[11px] text-text-secondary">
+                      Toggle off for low-power eco mode on weaker machines
+                    </span>
+                  </div>
+                  <Switch.Root
+                    checked={settings.animationsEnabled}
+                    onCheckedChange={(checked) => settings.setAnimationsEnabled(checked)}
+                    className="w-9 h-5 bg-hairline rounded-full relative data-[state=checked]:bg-accent transition-colors"
+                  >
+                    <Switch.Thumb className="block w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-100 translate-x-0.5 data-[state=checked]:translate-x-[18px]" />
+                  </Switch.Root>
+                </div>
               </div>
             </Tabs.Content>
 
