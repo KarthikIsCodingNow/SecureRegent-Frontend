@@ -4,6 +4,9 @@ import { ArrowRight, ChartLineUp, UsersThree, FileText, Handshake, ListChecks } 
 import { useSettingsStore } from "../store/settingsStore";
 import { useDataStore } from "../store/dataStore";
 import { formatCurrency, formatNumber } from "../utils/formatters";
+import { BrandLogo } from "../components/common/BrandLogo";
+import { LandingFooter } from "../components/common/SiteFooter";
+import { AnalogRollingCounter } from "../components/common/AnalogRollingCounter";
 
 export const LandingPage: React.FC = () => {
   const landing = useSettingsStore((s) => s.landing);
@@ -71,12 +74,7 @@ export const LandingPage: React.FC = () => {
 
         <header className="relative z-10 flex items-center justify-between max-w-7xl mx-auto w-full">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-text-primary flex items-center justify-center shadow-sm">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <rect x="4" y="3" width="5" height="18" rx="2.5" fill="white" />
-                <rect x="15" y="8" width="5" height="13" rx="2.5" fill="#3E6AE1" />
-              </svg>
-            </div>
+            <BrandLogo size={28} />
             <span className="font-display font-semibold text-xs tracking-[0.25em] uppercase text-text-primary">
               {landing.productName}
             </span>
@@ -97,7 +95,7 @@ export const LandingPage: React.FC = () => {
             </Link>
             <Link
               to="/app"
-              className="px-5 py-2 rounded-full bg-text-primary text-white text-xs font-medium hover:bg-black/90 shadow-sm transition-all"
+              className="px-5 py-2 rounded-full bg-text-primary text-card text-xs font-medium hover:opacity-90 shadow-sm transition-all"
             >
               {landing.ctaLabel}
             </Link>
@@ -106,10 +104,7 @@ export const LandingPage: React.FC = () => {
 
         <div className="relative z-10 max-w-4xl mx-auto w-full text-center py-16 sm:py-24 my-auto">
           <div className="inline-flex items-center justify-center gap-4 mb-6">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="drop-shadow-sm">
-              <rect x="8" y="6" width="10" height="36" rx="5" fill="#FFFFFF" />
-              <rect x="30" y="16" width="10" height="26" rx="5" fill="#FFFFFF" opacity="0.9" />
-            </svg>
+            <BrandLogo size={52} className="shadow-lg rounded-2xl" />
             <h1 className="text-white text-5xl sm:text-7xl font-display font-semibold tracking-tight">
               {landing.productName}
             </h1>
@@ -126,7 +121,7 @@ export const LandingPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/app"
-              className="px-7 py-3.5 rounded-full bg-text-primary text-white text-sm font-medium hover:bg-black transition-transform hover:-translate-y-0.5 shadow-md flex items-center gap-2"
+              className="px-7 py-3.5 rounded-full bg-text-primary text-card text-sm font-medium hover:opacity-90 transition-transform hover:-translate-y-0.5 shadow-md flex items-center gap-2"
             >
               <span>{landing.ctaLabel}</span>
               <ArrowRight size={15} weight="bold" />
@@ -267,7 +262,7 @@ export const LandingPage: React.FC = () => {
 
                 <div className="pt-4 border-t border-hairline flex items-end justify-between">
                   <span className="text-sm font-medium font-display text-text-primary tabular">
-                    {cap.stat}
+                    <AnalogRollingCounter value={cap.stat} />
                   </span>
                   <div className="w-16 h-6">
                     <svg viewBox="0 0 64 24" className="w-full h-full overflow-visible">
@@ -301,7 +296,7 @@ export const LandingPage: React.FC = () => {
             </p>
             <Link
               to="/app"
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-text-primary text-white text-sm font-medium hover:bg-black transition-all shadow-md"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-text-primary text-card text-sm font-medium hover:opacity-90 transition-all shadow-md"
             >
               <span>{landing.ctaLabel}</span>
               <ArrowRight size={15} weight="bold" />
@@ -309,28 +304,9 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        <footer className="mt-20 pt-8 border-t border-hairline flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-text-secondary">
-          <div className="flex items-center gap-2">
-            <span className="font-display font-medium text-text-primary">
-              {landing.productName}
-            </span>
-            <span>—</span>
-            <span>Business Performance & Revenue Analytics</span>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <Link to="/app" className="hover:text-text-primary transition-colors">
-              Dashboard
-            </Link>
-            <Link to="/app/leads" className="hover:text-text-primary transition-colors">
-              Leads
-            </Link>
-            <Link to="/app/admin" className="hover:text-text-primary transition-colors">
-              Admin console
-            </Link>
-          </div>
-        </footer>
       </section>
+
+      <LandingFooter />
     </div>
   );
 };

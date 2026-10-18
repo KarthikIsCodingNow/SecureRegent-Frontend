@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X, ArrowRight } from "@phosphor-icons/react";
+import { X, ArrowRight, MagnifyingGlass, ChartLineUp, CalendarBlank, Coins, ListChecks } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { StatusChip, StatusTone } from "./StatusChip";
-import { formatCurrency } from "../../utils/formatters";
+import { formatCurrency, formatNumber } from "../../utils/formatters";
+import { BaseChart } from "../charts/BaseChart";
+import { EChartsOption } from "../charts/echartsConfig";
+import { useSettingsStore } from "../../store/settingsStore";
 
 export interface DrillDownItem {
   id: string;
@@ -32,6 +35,10 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
   items
 }) => {
   const navigate = useNavigate();
+  const isDark = useSettingsStore((s) => s.themeMode === "dark");
+  const currencySymbol = useSettingsStore((s) => s.charts.currencySymbol) || "₹";
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeMetricView, setActiveMetricView] = useState<"count" | "amount">("count");
 
   const handleRowClick = (item: DrillDownItem) => {
     onOpenChange(false);
@@ -44,13 +51,186 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
     }
   };
 
+  const hasAmounts = useMemo(() => {
+    return items.some((i) => i.amount !== undefined && i.amount > 0);
+  }, [items]);
+
+  const totalAmount = useMemo(() => {
+    return items.reduce((sum, i) => sum + (i.amount || 0), 0);
+  }, [items]);
+
+  // Aggregate items chronologically for the analytical graph
+  const { chartDates, chartCounts, chartAmounts, peakDay } = useMemo(() => {
+    const dateMap: Record<string, { count: number; amount: number }> = {};
+
+    items.forEach((item) => {
+      const d = item.date ? item.date.slice(0, 10) : "N/A";
+      if (!dateMap[d]) {
+        dateMap[d] = { count: 0, amount: 0 };
+      }
+      dateMap[d].count += 1;
+      dateMap[d].amount += item.amount || 0;
+    });
+
+    const sortedDates = Object.keys(dateMap).sort();
+    const counts = sortedDates.map((d) => dateMap[d].count);
+    const amounts = sortedDates.map((d) => dateMap[d].amount);
+
+    let maxCount = 0;
+    let peak = sortedDates[0] || "N/A";
+    sortedDates.forEach((d) => {
+      if (dateMap[d].count > maxCount) {
+        maxCount = dateMap[d].count;
+        peak = d;
+      }
+    });
+
+    return {
+      chartDates: sortedDates,
+      chartCounts: counts,
+      chartAmounts: amounts,
+      peakDay: peak
+    };
+  }, [items]);
+
+  // Status breakdown stats
+  const statusCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    items.forEach((i) => {
+      map[i.status] = (map[i.status] || 0) + 1;
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [items]);
+
+  // ECharts Option for analytical timeline graph
+  const chartOption: EChartsOption = useMemo(() => {
+    const isAmountView = hasAmounts && activeMetricView === "amount";
+    const dataValues = isAmountView ? chartAmounts : chartCounts;
+
+    return {
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: isDark ? "#181B1F" : "#FFFFFF",
+        borderColor: isDark ? "#262A30" : "#EDEDED",
+        borderWidth: 1,
+        textStyle: {
+          color: isDark ? "#F4F5F6" : "#171A20",
+          fontSize: 12
+        },
+        formatter: (params: any) => {
+          if (!params || !params[0]) return "";
+          const p = params[0];
+          const val = isAmountView
+            ? formatCurrency(p.value, false, currencySymbol)
+            : `${p.value} ${p.value === 1 ? "record" : "records"}`;
+          return `
+            <div style="font-weight: 600; margin-bottom: 2px;">${p.name}</div>
+            <div style="color: var(--accent); font-weight: 500;">${val}</div>
+          `;
+        }
+      },
+      grid: {
+        top: 24,
+        right: 12,
+        bottom: 24,
+        left: 36
+      },
+      xAxis: {
+        type: "category",
+        data: chartDates.map((d) => (d.length >= 10 ? d.slice(5) : d)),
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: {
+          color: isDark ? "#A0A5AB" : "#5C5E62",
+          fontSize: 10
+        }
+      },
+      yAxis: {
+        type: "value",
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: {
+          lineStyle: {
+            color: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
+            type: "dashed"
+          }
+        },
+        axisLabel: {
+          color: isDark ? "#6E737A" : "#8E9196",
+          fontSize: 10,
+          formatter: (v: number) => {
+            if (isAmountView) {
+              if (v >= 100000) return `${currencySymbol}${(v / 100000).toFixed(0)}L`;
+              if (v >= 1000) return `${currencySymbol}${(v / 1000).toFixed(0)}k`;
+              return `${currencySymbol}${v}`;
+            }
+            return String(v);
+          }
+        }
+      },
+      series: [
+        {
+          name: isAmountView ? "Value" : "Volume",
+          type: "line",
+          smooth: 0.35,
+          data: dataValues,
+          symbolSize: 4,
+          itemStyle: {
+            color: "var(--accent)"
+          },
+          lineStyle: {
+            width: 2.5,
+            color: "var(--accent)"
+          },
+          areaStyle: {
+            color: {
+              type: "linear",
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: "var(--accent)" },
+                { offset: 1, color: "transparent" }
+              ]
+            },
+            opacity: 0.16
+          }
+        }
+      ]
+    };
+  }, [chartDates, chartCounts, chartAmounts, hasAmounts, activeMetricView, isDark, currencySymbol]);
+
+  // Filtered items based on search term
+  const filteredItems = useMemo(() => {
+    if (!searchTerm.trim()) return items;
+    const q = searchTerm.toLowerCase();
+    return items.filter(
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.subtitle.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q) ||
+        item.status.toLowerCase().includes(q)
+    );
+  }, [items, searchTerm]);
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/20 z-40 transition-opacity animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed top-0 right-0 bottom-0 w-full sm:w-[520px] bg-card shadow-2xl z-50 flex flex-col rounded-l-[24px] outline-none animate-in slide-in-from-right duration-250 ease-out">
-          <div className="p-6 border-b border-hairline flex items-center justify-between">
+        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity animate-in fade-in duration-200" />
+        <Dialog.Content className="fixed top-0 right-0 bottom-0 w-full sm:w-[580px] bg-card shadow-2xl z-50 flex flex-col rounded-l-[24px] outline-none animate-in slide-in-from-right duration-250 ease-out border-l border-hairline">
+          {/* Header */}
+          <div className="p-6 border-b border-hairline flex items-start justify-between gap-4 shrink-0 bg-card">
             <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-accent-soft text-accent">
+                  <ChartLineUp size={12} weight="bold" />
+                  <span>Analytical Drilldown</span>
+                </span>
+                <span className="text-xs text-text-tertiary">
+                  {items.length} records in view
+                </span>
+              </div>
               <Dialog.Title className="text-xl font-medium font-display text-text-primary">
                 {title}
               </Dialog.Title>
@@ -62,7 +242,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
             </div>
             <Dialog.Close asChild>
               <button
-                className="w-8 h-8 rounded-full flex items-center justify-center text-text-tertiary hover:text-text-primary hover:bg-canvas transition-colors"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-text-tertiary hover:text-text-primary hover:bg-canvas transition-colors shrink-0"
                 aria-label="Close drawer"
               >
                 <X size={18} />
@@ -70,68 +250,197 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
             </Dialog.Close>
           </div>
 
-          <div className="p-4 bg-canvas/40 border-b border-hairline flex items-center justify-between text-xs text-text-secondary">
-            <span>Showing {items.length} records</span>
-            <span>Click row for full detail</span>
-          </div>
+          <div className="flex-1 overflow-y-auto">
+            {/* Analytical Graph Section */}
+            {items.length > 0 && (
+              <div className="p-5 border-b border-hairline bg-canvas/40 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    <ChartLineUp size={14} className="text-accent" />
+                    <span>Distribution & Trend Analysis</span>
+                  </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-hairline">
-            {items.length === 0 ? (
-              <div className="p-8 text-center text-sm text-text-secondary">
-                No matching records found.
-              </div>
-            ) : (
-              items.map((item) => (
-                <div
-                  key={`${item.type}-${item.id}`}
-                  onClick={() => handleRowClick(item)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleRowClick(item);
-                    }
-                  }}
-                  className="p-4 hover:bg-canvas/50 transition-colors cursor-pointer flex items-center justify-between gap-4 group"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono font-medium text-text-tertiary">
-                        {item.id}
-                      </span>
-                      <StatusChip
-                        label={item.status}
-                        tone={item.statusTone || "neutral"}
-                      />
+                  {hasAmounts && (
+                    <div className="flex items-center gap-1 p-0.5 bg-card border border-hairline rounded-full text-xs">
+                      <button
+                        onClick={() => setActiveMetricView("count")}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                          activeMetricView === "count"
+                            ? "bg-accent text-accent-contrast shadow-sm"
+                            : "text-text-secondary hover:text-text-primary"
+                        }`}
+                      >
+                        Count
+                      </button>
+                      <button
+                        onClick={() => setActiveMetricView("amount")}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                          activeMetricView === "amount"
+                            ? "bg-accent text-accent-contrast shadow-sm"
+                            : "text-text-secondary hover:text-text-primary"
+                        }`}
+                      >
+                        Value ({currencySymbol})
+                      </button>
                     </div>
-                    <div className="text-sm font-medium text-text-primary truncate">
-                      {item.title}
+                  )}
+                </div>
+
+                {/* Analytical Summary Badges */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div className="p-3 bg-card rounded-tile border border-hairline">
+                    <div className="text-[10px] font-medium text-text-tertiary uppercase flex items-center gap-1">
+                      <ListChecks size={12} />
+                      <span>Total Volume</span>
                     </div>
-                    <div className="text-xs text-text-secondary truncate mt-0.5">
-                      {item.subtitle}
+                    <div className="text-lg font-medium text-text-primary mt-0.5 tabular">
+                      {formatNumber(items.length)}
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0 flex items-center gap-3">
-                    <div>
-                      {item.amount !== undefined && (
-                        <div className="text-sm font-medium text-text-primary tabular">
-                          {formatCurrency(item.amount)}
-                        </div>
-                      )}
-                      <div className="text-xs text-text-tertiary">
-                        {item.date}
+                  {hasAmounts ? (
+                    <div className="p-3 bg-card rounded-tile border border-hairline">
+                      <div className="text-[10px] font-medium text-text-tertiary uppercase flex items-center gap-1">
+                        <Coins size={12} />
+                        <span>Total Realized</span>
+                      </div>
+                      <div className="text-lg font-medium text-text-primary mt-0.5 tabular truncate">
+                        {formatCurrency(totalAmount, false, currencySymbol)}
                       </div>
                     </div>
-                    <ArrowRight
-                      size={16}
-                      className="text-text-tertiary group-hover:text-accent group-hover:translate-x-0.5 transition-all"
-                    />
+                  ) : (
+                    <div className="p-3 bg-card rounded-tile border border-hairline">
+                      <div className="text-[10px] font-medium text-text-tertiary uppercase flex items-center gap-1">
+                        <CalendarBlank size={12} />
+                        <span>Peak Date</span>
+                      </div>
+                      <div className="text-lg font-medium text-text-primary mt-0.5 tabular">
+                        {peakDay}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-3 bg-card rounded-tile border border-hairline col-span-2 sm:col-span-1">
+                    <div className="text-[10px] font-medium text-text-tertiary uppercase">
+                      Top Segment
+                    </div>
+                    <div className="text-sm font-medium text-text-primary mt-1 truncate">
+                      {statusCounts[0] ? `${statusCounts[0][0]} (${statusCounts[0][1]})` : "N/A"}
+                    </div>
                   </div>
                 </div>
-              ))
+
+                {/* ECharts Area Graph */}
+                <div className="bg-card p-3 rounded-tile border border-hairline shadow-sm">
+                  <BaseChart
+                    option={chartOption}
+                    height={165}
+                    ariaLabel={`${title} analytical trend chart`}
+                  />
+                </div>
+
+                {/* Status distribution chips */}
+                {statusCounts.length > 1 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[11px] font-medium text-text-tertiary mr-1">
+                      Status breakdown:
+                    </span>
+                    {statusCounts.map(([st, cnt]) => (
+                      <span
+                        key={st}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-card border border-hairline text-text-secondary"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                        <span>{st}</span>
+                        <span className="font-semibold text-text-primary tabular">({cnt})</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* List of Values Section */}
+            <div className="p-4 bg-canvas/60 border-b border-hairline sticky top-0 z-10 flex items-center justify-between gap-3 backdrop-blur-sm">
+              <div className="relative flex-1 max-w-xs">
+                <MagnifyingGlass
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary"
+                />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Filter records..."
+                  className="w-full pl-8 pr-3 py-1.5 rounded-full bg-card border border-hairline text-xs font-medium text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+
+              <div className="text-xs text-text-secondary tabular shrink-0">
+                <span>
+                  Showing {filteredItems.length} of {items.length} records
+                </span>
+              </div>
+            </div>
+
+            <div className="divide-y divide-hairline">
+              {filteredItems.length === 0 ? (
+                <div className="p-10 text-center text-sm text-text-secondary">
+                  No matching records found.
+                </div>
+              ) : (
+                filteredItems.map((item) => (
+                  <div
+                    key={`${item.type}-${item.id}`}
+                    onClick={() => handleRowClick(item)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleRowClick(item);
+                      }
+                    }}
+                    className="p-4 hover:bg-canvas/50 transition-colors cursor-pointer flex items-center justify-between gap-4 group"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-mono font-medium text-text-tertiary">
+                          {item.id}
+                        </span>
+                        <StatusChip
+                          label={item.status}
+                          tone={item.statusTone || "neutral"}
+                        />
+                      </div>
+                      <div className="text-sm font-medium text-text-primary truncate">
+                        {item.title}
+                      </div>
+                      <div className="text-xs text-text-secondary truncate mt-0.5">
+                        {item.subtitle}
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0 flex items-center gap-3">
+                      <div>
+                        {item.amount !== undefined && (
+                          <div className="text-sm font-medium text-text-primary tabular">
+                            {formatCurrency(item.amount, false, currencySymbol)}
+                          </div>
+                        )}
+                        <div className="text-xs text-text-tertiary tabular">
+                          {item.date}
+                        </div>
+                      </div>
+                      <ArrowRight
+                        size={16}
+                        className="text-text-tertiary group-hover:text-accent group-hover:translate-x-0.5 transition-all"
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

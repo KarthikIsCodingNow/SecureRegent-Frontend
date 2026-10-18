@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { DEFAULT_CHART_PALETTE, DEFAULT_MONTHLY_TARGET } from "../domain/constants";
 import { DEFAULT_SIMULATOR_CONFIG, SimulatorConfig } from "../domain/generator";
-import { isProhibitedHue } from "../utils/colors";
+import { isProhibitedHue, getContrastTextColor } from "../utils/colors";
 
 export type ThemeMode = "light" | "dark" | "system";
 export type ThemePreset = "graphite" | "signal" | "forest" | "sand" | "mono";
@@ -92,9 +92,11 @@ export interface SettingsState {
   business: BusinessSettings;
   simulator: SimulatorConfig;
   landing: LandingSettings;
+  customLogo: string | null;
 
   setThemeMode: (mode: ThemeMode) => void;
   applyPreset: (preset: ThemePreset) => void;
+  setCustomLogo: (logo: string | null) => void;
   setColorToken: (mode: "light" | "dark", token: keyof ColorTokens, value: string) => boolean;
   setShape: (radius: number, shadow: "none" | "soft" | "medium", density: "comfortable" | "compact") => void;
   setFontSettings: (baseSize: number, pairing: "rethink-helvetica" | "helvetica-only" | "rethink-only") => void;
@@ -118,7 +120,7 @@ export interface SettingsState {
   importSettingsJson: (json: string) => { success: boolean; error?: string };
 }
 
-const STORAGE_KEY = "meridian_settings_v1";
+const STORAGE_KEY = "secureregent_settings_v1";
 
 const DEFAULT_LIGHT_COLORS: ColorTokens = {
   accent: "#3E6AE1",
@@ -195,7 +197,7 @@ const DEFAULT_BUSINESS_CONFIG: BusinessSettings = {
 };
 
 const DEFAULT_LANDING_CONFIG: LandingSettings = {
-  productName: "Meridian",
+  productName: "Secure-Regent",
   heroStatement: "From first enquiry to final payment.",
   heroSubline: "Track leads, quotations, deals, orders and collections across every service.",
   ctaLabel: "Open dashboard",
@@ -286,6 +288,8 @@ function applyCssTokensToDom(state: {
   root.style.setProperty("--text-secondary", colors.textSecondary);
   root.style.setProperty("--accent", colors.accent);
   root.style.setProperty("--accent-soft", colors.accentSoft);
+  const accentContrast = getContrastTextColor(colors.accent);
+  root.style.setProperty("--accent-contrast", accentContrast);
   root.style.setProperty("--positive", colors.positive);
   root.style.setProperty("--negative", colors.negative);
   root.style.setProperty("--warning", colors.warning);
@@ -314,10 +318,13 @@ function applyCssTokensToDom(state: {
 function loadSavedState(): Partial<SettingsState> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("meridian_settings_v1");
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    if (parsed && parsed.version === 1) {
+    if (parsed && (parsed.version === 1 || parsed.version === 2)) {
+      if (parsed.landing && (parsed.landing.productName === "Meridian" || !parsed.landing.productName)) {
+        parsed.landing.productName = "Secure-Regent";
+      }
       return parsed;
     }
   } catch {
@@ -345,7 +352,8 @@ function saveState(state: SettingsState) {
       pageLayouts: state.pageLayouts,
       business: state.business,
       simulator: state.simulator,
-      landing: state.landing
+      landing: state.landing,
+      customLogo: state.customLogo
     });
     localStorage.setItem(STORAGE_KEY, serialized);
   } catch {
@@ -375,6 +383,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   business: saved.business ? { ...DEFAULT_BUSINESS_CONFIG, ...saved.business } : { ...DEFAULT_BUSINESS_CONFIG },
   simulator: saved.simulator ? { ...DEFAULT_SIMULATOR_CONFIG, ...saved.simulator } : { ...DEFAULT_SIMULATOR_CONFIG },
   landing: saved.landing ? { ...DEFAULT_LANDING_CONFIG, ...saved.landing } : { ...DEFAULT_LANDING_CONFIG },
+  customLogo: saved.customLogo || null,
+
+  setCustomLogo: (logo) => {
+    set({ customLogo: logo });
+    saveState(get());
+  },
 
   setThemeMode: (mode) => {
     set({ themeMode: mode });
@@ -564,7 +578,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       pageLayouts: { ...DEFAULT_LAYOUTS },
       business: { ...DEFAULT_BUSINESS_CONFIG },
       simulator: { ...DEFAULT_SIMULATOR_CONFIG },
-      landing: { ...DEFAULT_LANDING_CONFIG }
+      landing: { ...DEFAULT_LANDING_CONFIG },
+      customLogo: null
     });
     applyCssTokensToDom(get());
     saveState(get());
@@ -589,7 +604,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         pageLayouts: s.pageLayouts,
         business: s.business,
         simulator: s.simulator,
-        landing: s.landing
+        landing: s.landing,
+        customLogo: s.customLogo
       },
       null,
       2
@@ -622,7 +638,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         pageLayouts: data.pageLayouts || state.pageLayouts,
         business: { ...state.business, ...(data.business || {}) },
         simulator: { ...state.simulator, ...(data.simulator || {}) },
-        landing: { ...state.landing, ...(data.landing || {}) }
+        landing: { ...state.landing, ...(data.landing || {}) },
+        customLogo: typeof data.customLogo !== "undefined" ? data.customLogo : state.customLogo
       }));
 
       const next = get();

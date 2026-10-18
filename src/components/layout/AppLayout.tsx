@@ -5,6 +5,8 @@ import { Sidebar } from "./Sidebar";
 import { GlobalFilterBar } from "./GlobalFilterBar";
 import { useFilterContext } from "../../context/FilterContext";
 import { useSettingsStore } from "../../store/settingsStore";
+import { BrandLogo } from "../common/BrandLogo";
+import { DashboardFooter } from "../common/SiteFooter";
 
 export const AppLayout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -55,13 +57,8 @@ export const AppLayout: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <div className="lg:hidden flex items-center justify-between px-6 py-4 bg-sidebar border-b border-hairline sticky top-0 z-20">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-text-primary flex items-center justify-center">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                <rect x="4" y="3" width="5" height="18" rx="2.5" fill="white" />
-                <rect x="15" y="8" width="5" height="13" rx="2.5" fill="var(--accent)" />
-              </svg>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <BrandLogo size={22} />
             <span className="font-display font-semibold text-xs tracking-widest uppercase">
               {productName}
             </span>
@@ -76,20 +73,24 @@ export const AppLayout: React.FC = () => {
           </button>
         </div>
 
-        <main className="flex-1 px-6 md:px-10 py-8 max-w-[1600px] w-full mx-auto">
-          {!isDetailPage && !isAdminPage && (
-            <GlobalFilterBar
-              filter={filter}
-              onFilterChange={setFilter}
-              onReset={resetFilter}
-              currentRange={currentRange}
-              previousRange={previousRange}
-            />
-          )}
+        <main className="flex-1 px-6 md:px-10 py-8 max-w-[1600px] w-full mx-auto flex flex-col justify-between">
+          <div>
+            {!isDetailPage && !isAdminPage && (
+              <GlobalFilterBar
+                filter={filter}
+                onFilterChange={setFilter}
+                onReset={resetFilter}
+                currentRange={currentRange}
+                previousRange={previousRange}
+              />
+            )}
 
-          <div className="animate-in fade-in duration-150">
-            <Outlet />
+            <div key={location.pathname} className="page-transition">
+              <Outlet />
+            </div>
           </div>
+
+          <DashboardFooter />
         </main>
       </div>
     </div>

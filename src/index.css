@@ -16,6 +16,7 @@
   --text-tertiary: #8E9196;
   --accent: #3E6AE1;
   --accent-soft: #E8EEFC;
+  --accent-contrast: #FFFFFF;
   --positive: #2FBF71;
   --negative: #E5484D;
   --warning: #F5A524;
@@ -34,7 +35,38 @@
   --text-tertiary: #6E737A;
   --accent: #5B83F0;
   --accent-soft: #1E2942;
+  --accent-contrast: #FFFFFF;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25), 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+/* Global button and element contrast safety in dark mode */
+.dark .bg-text-primary,
+.dark a.bg-text-primary,
+.dark button.bg-text-primary {
+  color: var(--card) !important;
+}
+
+.dark .bg-text-primary svg,
+.dark a.bg-text-primary svg,
+.dark button.bg-text-primary svg {
+  color: var(--card) !important;
+}
+
+/* Fluid Page transitions */
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: pageEnter 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
 }
 
 * {

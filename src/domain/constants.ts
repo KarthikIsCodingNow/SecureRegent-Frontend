@@ -1,6 +1,6 @@
 import { LeadSource, ServiceCategory, ServiceItem } from "./types";
 
-export const APP_NAME = "Meridian";
+export const APP_NAME = "Secure-Regent";
 
 export const SERVICES: ServiceItem[] = [
   { name: "Private Limited Company", category: "Company registration", minPrice: 7500, maxPrice: 15000 },

@@ -22,7 +22,7 @@ export const DealDetailPage: React.FC = () => {
         <p className="text-xs text-text-secondary mb-6">The specified deal ID does not exist.</p>
         <button
           onClick={() => navigate("/app/deals")}
-          className="px-4 py-2 rounded-full bg-accent text-white text-xs font-medium"
+          className="px-4 py-2 rounded-full bg-accent text-accent-contrast text-xs font-medium hover:opacity-90 transition-opacity"
         >
           Return to deals
         </button>

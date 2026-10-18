@@ -80,3 +80,10 @@ export function getContrastBadge(ratio: number): { label: string; pass: boolean 
   const label = `${ratio.toFixed(1)}:1 ${pass ? "AA Pass" : "AA Fail"}`;
   return { label, pass };
 }
+
+export function getContrastTextColor(backgroundHex: string): string {
+  const rgb = hexToRgb(backgroundHex);
+  if (!rgb) return "#FFFFFF";
+  const lum = getLuminance(rgb.r, rgb.g, rgb.b);
+  return lum > 0.4 ? "#0F1114" : "#FFFFFF";
+}

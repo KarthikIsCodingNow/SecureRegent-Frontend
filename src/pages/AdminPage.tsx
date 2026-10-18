@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Switch from "@radix-ui/react-switch";
 import * as Slider from "@radix-ui/react-slider";
-import { ArrowCounterClockwise, DownloadSimple, UploadSimple } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, DownloadSimple, UploadSimple, Trash, Image as ImageIcon, CheckCircle, WarningCircle } from "@phosphor-icons/react";
 import { useSettingsStore, ThemePreset, ThemeMode, ColorTokens } from "@/store/settingsStore";
 import { useDataStore } from "@/store/dataStore";
 import { calculateContrast, getContrastBadge, isProhibitedHue } from "@/utils/colors";
@@ -10,6 +10,7 @@ import { formatCurrency } from "@/utils/formatters";
 import { KpiCard } from "@/components/common/KpiCard";
 import { BaseChart } from "@/components/charts/BaseChart";
 import { EChartsOption } from "@/components/charts/echartsConfig";
+import { BrandLogo } from "@/components/common/BrandLogo";
 
 export const AdminPage: React.FC = () => {
   const settings = useSettingsStore();
@@ -17,6 +18,43 @@ export const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("theme");
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [jsonSuccess, setJsonSuccess] = useState(false);
+  const [logoFeedback, setLogoFeedback] = useState<{ message: string; isError?: boolean } | null>(null);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validExtensions = /\.(png|svg|jpe?g)$/i;
+    if (!file.name.match(validExtensions) && !file.type.match(/^image\/(png|svg\+xml|jpeg|jpg)$/i)) {
+      setLogoFeedback({ message: "Invalid format. Please select a PNG, SVG, JPEG, or JPG file.", isError: true });
+      setTimeout(() => setLogoFeedback(null), 4000);
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoFeedback({ message: "Image exceeds 5MB limit. Please upload a smaller logo.", isError: true });
+      setTimeout(() => setLogoFeedback(null), 4000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        settings.setCustomLogo(dataUrl);
+        setLogoFeedback({ message: "Logo updated successfully! Applied across website header, sidebar, and landing page." });
+        setTimeout(() => setLogoFeedback(null), 4000);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleRemoveLogo = () => {
+    settings.setCustomLogo(null);
+    setLogoFeedback({ message: "Custom logo removed. Default Secure-Regent icon restored." });
+    setTimeout(() => setLogoFeedback(null), 4000);
+  };
 
   const previewOption: EChartsOption = {
     color: settings.charts.palette,
@@ -58,7 +96,7 @@ export const AdminPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `meridian_settings_${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `secureregent_settings_${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -545,7 +583,7 @@ export const AdminPage: React.FC = () => {
               <div className="pt-4 border-t border-hairline flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => regenerate(settings.simulator)}
-                  className="px-5 py-2 rounded-full bg-accent text-white text-xs font-medium hover:opacity-90 transition-opacity"
+                  className="px-5 py-2 rounded-full bg-accent text-accent-contrast text-xs font-medium hover:opacity-90 transition-opacity"
                 >
                   Regenerate simulation dataset
                 </button>
@@ -579,7 +617,7 @@ export const AdminPage: React.FC = () => {
               <div className="flex items-center justify-between pb-4 border-b border-hairline">
                 <div>
                   <h3 className="text-sm font-medium text-text-primary">Landing page & branding</h3>
-                  <p className="text-xs text-text-secondary">Custom product name, hero copy and mesh gradient stops</p>
+                  <p className="text-xs text-text-secondary">Custom logo, product name, hero copy and mesh gradient stops</p>
                 </div>
                 <button
                   onClick={() => settings.resetSection("landing")}
@@ -588,6 +626,88 @@ export const AdminPage: React.FC = () => {
                   <ArrowCounterClockwise size={12} />
                   <span>Reset tab</span>
                 </button>
+              </div>
+
+              {/* Website Logo Upload Section */}
+              <div className="p-4 rounded-tile bg-canvas/60 border border-hairline space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-semibold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
+                      <ImageIcon size={14} className="text-accent" />
+                      <span>Website Logo (PNG, SVG, JPEG, JPG)</span>
+                    </h4>
+                    <p className="text-[11px] text-text-secondary mt-0.5">
+                      Upload your official logo to be displayed throughout the website (Sidebar, Landing page header & hero, Mobile navbar, and Footers).
+                    </p>
+                  </div>
+                  {settings.customLogo && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-positive/10 text-positive border border-positive/20">
+                      Custom Logo Active
+                    </span>
+                  )}
+                </div>
+
+                {/* Previews and Upload Controls */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                  <div className="sm:col-span-6 flex items-center gap-4">
+                    {/* Light preview card */}
+                    <div className="p-3 rounded-tile bg-[#FFFFFF] border border-[#EDEDED] shadow-sm flex flex-col items-center justify-center min-w-[100px] text-center">
+                      <BrandLogo size={36} />
+                      <span className="text-[10px] font-medium text-[#5C5E62] mt-1.5">
+                        Light Mode
+                      </span>
+                    </div>
+
+                    {/* Dark preview card */}
+                    <div className="p-3 rounded-tile bg-[#181B1F] border border-[#262A30] shadow-sm flex flex-col items-center justify-center min-w-[100px] text-center">
+                      <BrandLogo size={36} />
+                      <span className="text-[10px] font-medium text-[#A0A5AB] mt-1.5">
+                        Dark Mode
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-6 flex flex-wrap items-center gap-2 sm:justify-end">
+                    <label className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-accent-contrast text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer shadow-sm">
+                      <UploadSimple size={14} weight="bold" />
+                      <span>Upload Logo</span>
+                      <input
+                        type="file"
+                        accept=".png,.svg,.jpeg,.jpg,image/png,image/svg+xml,image/jpeg"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {settings.customLogo && (
+                      <button
+                        onClick={handleRemoveLogo}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-hairline text-xs font-medium text-text-secondary hover:text-negative hover:border-negative/30 hover:bg-negative/5 transition-colors"
+                        title="Remove custom logo and restore default"
+                      >
+                        <Trash size={14} />
+                        <span>Revert to default</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {logoFeedback && (
+                  <div
+                    className={`p-3 rounded-tile text-xs flex items-center gap-2 animate-in fade-in duration-150 ${
+                      logoFeedback.isError
+                        ? "bg-negative/10 text-negative border border-negative/20"
+                        : "bg-positive/10 text-positive border border-positive/20"
+                    }`}
+                  >
+                    {logoFeedback.isError ? (
+                      <WarningCircle size={15} weight="fill" className="shrink-0" />
+                    ) : (
+                      <CheckCircle size={15} weight="fill" className="shrink-0" />
+                    )}
+                    <span>{logoFeedback.message}</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">

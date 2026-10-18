@@ -18,7 +18,8 @@ export default {
         },
         accent: {
           DEFAULT: "var(--accent)",
-          soft: "var(--accent-soft)"
+          soft: "var(--accent-soft)",
+          contrast: "var(--accent-contrast, #ffffff)"
         },
         positive: "var(--positive)",
         negative: "var(--negative)",

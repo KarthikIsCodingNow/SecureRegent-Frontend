@@ -13,7 +13,7 @@ export const NotFoundPage: React.FC = () => {
       </p>
       <Link
         to="/app"
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-white text-xs font-medium hover:opacity-90 transition-opacity"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-accent-contrast text-xs font-medium hover:opacity-90 transition-opacity"
       >
         <ArrowLeft size={14} weight="bold" />
         <span>Back to overview</span>

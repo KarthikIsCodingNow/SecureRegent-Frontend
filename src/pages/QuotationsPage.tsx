@@ -42,7 +42,7 @@ export const QuotationsPage: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `meridian_quotations_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `secureregent_quotations_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -577,7 +577,45 @@ export const QuotationsPage: React.FC = () => {
                 </div>
 
                 {isExpanded && (
-                  <div className="pl-9 pr-4 py-3 mt-2 bg-canvas/60 rounded-tile border border-hairline space-y-2">
+                  <div className="pl-9 pr-4 py-3 mt-2 bg-canvas/60 rounded-tile border border-hairline space-y-3 animate-in fade-in-50 duration-150">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-text-secondary pb-1 border-b border-hairline/60">
+                      <span className="font-medium">
+                        Quote analytics · {group.quotes.length} {group.quotes.length === 1 ? "estimate" : "estimates"} · {formatCurrency(group.totalQuoted, false, chartsConfig.currencySymbol)} total
+                      </span>
+                      <div className="flex items-center gap-2 tabular font-medium">
+                        <span className="text-positive">
+                          Accepted: {group.quotes.filter((q) => q.status === "Accepted").length}
+                        </span>
+                        <span className="text-warning">
+                          Pending: {group.quotes.filter((q) => q.status === "Pending").length}
+                        </span>
+                        <span className="text-negative">
+                          Rejected: {group.quotes.filter((q) => q.status === "Rejected").length}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-1.5 rounded-full bg-hairline/80 flex overflow-hidden">
+                      <div
+                        style={{
+                          width: `${(group.quotes.filter((q) => q.status === "Accepted").length / group.quotes.length) * 100}%`
+                        }}
+                        className="bg-positive h-full"
+                      />
+                      <div
+                        style={{
+                          width: `${(group.quotes.filter((q) => q.status === "Pending").length / group.quotes.length) * 100}%`
+                        }}
+                        className="bg-warning h-full"
+                      />
+                      <div
+                        style={{
+                          width: `${(group.quotes.filter((q) => q.status === "Rejected").length / group.quotes.length) * 100}%`
+                        }}
+                        className="bg-negative h-full"
+                      />
+                    </div>
+
                     {group.quotes.map((q) => (
                       <div
                         key={q.id}

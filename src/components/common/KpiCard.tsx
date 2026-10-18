@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { CaretUp, CaretDown, Minus } from "@phosphor-icons/react";
 import clsx from "clsx";
 import { DeltaResult } from "../../utils/formatters";
+import { AnalogRollingCounter } from "./AnalogRollingCounter";
 
 interface KpiCardProps {
   label: string;
@@ -22,57 +23,6 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   onClick,
   className = ""
 }) => {
-  const [displayValue, setDisplayValue] = useState<string>(
-    formattedValue || String(value)
-  );
-
-  useEffect(() => {
-    if (typeof value !== "number") {
-      setDisplayValue(formattedValue || String(value));
-      return;
-    }
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setDisplayValue(formattedValue || String(value));
-      return;
-    }
-
-    let start = 0;
-    const duration = 500;
-    const startTime = performance.now();
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const currentVal = Math.round(start + (value - start) * eased);
-
-      if (formattedValue && formattedValue.startsWith("₹")) {
-        const symbol = "₹";
-        const parts = currentVal.toString().split(".");
-        let intPart = parts[0];
-        const lastThree = intPart.substring(intPart.length - 3);
-        const otherNumbers = intPart.substring(0, intPart.length - 3);
-        if (otherNumbers !== "") {
-          intPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + lastThree;
-        } else {
-          intPart = lastThree;
-        }
-        setDisplayValue(`${symbol}${intPart}`);
-      } else {
-        setDisplayValue(String(currentVal));
-      }
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        setDisplayValue(formattedValue || String(value));
-      }
-    };
-
-    requestAnimationFrame(animate);
-  }, [value, formattedValue]);
-
   const maxVal = Math.max(...sparklineData, 1);
   const minVal = Math.min(...sparklineData, 0);
   const range = maxVal - minVal || 1;
@@ -89,6 +39,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     .join(" ");
 
   const areaPoints = `0,${height} ${points} ${width},${height}`;
+  const displayString = formattedValue !== undefined ? formattedValue : String(value);
 
   return (
     <div
@@ -136,7 +87,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
       <div className="flex items-end justify-between gap-4 mt-1">
         <div className="font-display text-[36px] leading-[40px] font-medium tracking-tight text-text-primary tabular">
-          {displayValue}
+          <AnalogRollingCounter value={displayString} />
         </div>
 
         <div className="shrink-0 w-[120px] h-[36px]">

@@ -43,7 +43,7 @@ export const LeadsPage: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `meridian_leads_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `secureregent_leads_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -304,8 +304,8 @@ export const LeadsPage: React.FC = () => {
       statusTone: getStatusTone(l.status)
     }));
     openDrillDown(
-      status ? `${status} leads` : "All leads",
-      `Showing ${targetLeads.length} leads in selected view`,
+      status === "Converted" ? "Converted leads (Won deals)" : status ? `${status} leads` : "New leads",
+      `Showing ${targetLeads.length} ${status ? status.toLowerCase() : "captured"} leads in selected view`,
       items
     );
   };
@@ -357,7 +357,7 @@ export const LeadsPage: React.FC = () => {
           formattedValue={`${currentMetrics.conversionRate.toFixed(1)}%`}
           delta={deltas.conversionRate}
           sparklineData={[14, 16, 15, 20, 22, 25, Math.round(currentMetrics.conversionRate)]}
-          onClick={() => handleKpiClick()}
+          onClick={() => handleKpiClick("Converted")}
         />
       </div>
 

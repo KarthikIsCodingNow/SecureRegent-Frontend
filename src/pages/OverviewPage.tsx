@@ -44,7 +44,7 @@ export const OverviewPage: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `meridian_overview_leads_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `secureregent_overview_leads_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -255,7 +255,27 @@ export const OverviewPage: React.FC = () => {
         status: l.status,
         statusTone: l.status === "Converted" ? "positive" : l.status === "Unqualified" ? "negative" : "neutral"
       }));
-      openDrillDown("New leads", "Leads captured within this period", items);
+      openDrillDown("New leads", "All captured leads within this period", items);
+    } else if (type === "conversions" || type === "conversion") {
+      const convertedLeads = currentDataset.leads.filter((l: Lead) => l.status === "Converted");
+      const items: DrillDownItem[] = convertedLeads.map((l: Lead) => {
+        const deal = currentDataset.deals.find((d: Deal) => d.leadId === l.id);
+        return {
+          id: l.id,
+          type: "lead",
+          title: l.contactName,
+          subtitle: `${l.company} · ${l.city} · Converted to deal`,
+          date: l.createdAt.slice(0, 10),
+          amount: deal?.value,
+          status: "Converted",
+          statusTone: "positive"
+        };
+      });
+      openDrillDown(
+        "Converted leads & conversions",
+        `${currentMetrics.conversionRate.toFixed(1)}% conversion rate · ${convertedLeads.length} leads converted`,
+        items
+      );
     } else if (type === "deals") {
       const items: DrillDownItem[] = currentDataset.deals.map((d: Deal) => ({
         id: d.id,
@@ -352,7 +372,7 @@ export const OverviewPage: React.FC = () => {
           formattedValue={`${currentMetrics.conversionRate.toFixed(1)}%`}
           delta={deltas.conversionRate}
           sparklineData={[15, 18, 16, 22, 20, 24, Math.round(currentMetrics.conversionRate)]}
-          onClick={() => handleKpiClick("leads")}
+          onClick={() => handleKpiClick("conversions")}
         />
         <KpiCard
           label="Quotations created"

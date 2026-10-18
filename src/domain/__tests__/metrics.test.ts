@@ -209,5 +209,34 @@ describe("Design System & Color Tokens", () => {
       expect(hue < 255 || hue > 320).toBe(true);
     }
   });
+
+  it("enforces APP_NAME is Secure-Regent across constants", async () => {
+    const { APP_NAME } = await import("../constants");
+    expect(APP_NAME).toBe("Secure-Regent");
+  });
+
+  it("calculates high contrast text colors for light and dark backgrounds", async () => {
+    const { getContrastTextColor } = await import("../../utils/colors");
+    // On dark background (#171A20 or #0F1114), contrast text should be white
+    expect(getContrastTextColor("#171A20")).toBe("#FFFFFF");
+    expect(getContrastTextColor("#0F1114")).toBe("#FFFFFF");
+    expect(getContrastTextColor("#1E2942")).toBe("#FFFFFF");
+
+    // On light background (#F7F7F8, #FFFFFF, or #D2D6DC), contrast text should be dark
+    expect(getContrastTextColor("#FFFFFF")).toBe("#0F1114");
+    expect(getContrastTextColor("#F7F7F8")).toBe("#0F1114");
+    expect(getContrastTextColor("#D2D6DC")).toBe("#0F1114");
+  });
+
+  it("handles custom logo setting in settingsStore", async () => {
+    const { useSettingsStore } = await import("../../store/settingsStore");
+    const testSvg = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=";
+    useSettingsStore.getState().setCustomLogo(testSvg);
+    expect(useSettingsStore.getState().customLogo).toBe(testSvg);
+
+    // Reset logo
+    useSettingsStore.getState().setCustomLogo(null);
+    expect(useSettingsStore.getState().customLogo).toBeNull();
+  });
 });
 

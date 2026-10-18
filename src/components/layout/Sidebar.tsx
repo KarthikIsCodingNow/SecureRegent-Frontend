@@ -10,6 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import clsx from "clsx";
 import { useSettingsStore } from "../../store/settingsStore";
+import { BrandLogo } from "../common/BrandLogo";
 
 interface SidebarProps {
   className?: string;
@@ -40,13 +41,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "", onItemClick })
     >
       <div>
         <div className="flex items-center gap-2.5 px-3 py-2 mb-8">
-          <div className="w-6 h-6 rounded-md bg-text-primary flex items-center justify-center shrink-0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <rect x="4" y="3" width="5" height="18" rx="2.5" fill="white" />
-              <rect x="15" y="8" width="5" height="13" rx="2.5" fill="var(--accent)" />
-            </svg>
-          </div>
-          <span className="font-display font-semibold text-xs tracking-[0.2em] uppercase text-text-primary">
+          <BrandLogo size={26} />
+          <span className="font-display font-semibold text-xs tracking-[0.2em] uppercase text-text-primary truncate">
             {productName}
           </span>
         </div>

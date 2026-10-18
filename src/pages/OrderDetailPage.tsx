@@ -21,7 +21,7 @@ export const OrderDetailPage: React.FC = () => {
         <p className="text-xs text-text-secondary mb-6">The specified order ID does not exist.</p>
         <button
           onClick={() => navigate("/app/orders")}
-          className="px-4 py-2 rounded-full bg-accent text-white text-xs font-medium"
+          className="px-4 py-2 rounded-full bg-accent text-accent-contrast text-xs font-medium hover:opacity-90 transition-opacity"
         >
           Return to orders
         </button>

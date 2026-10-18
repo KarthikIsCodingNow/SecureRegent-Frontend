@@ -142,7 +142,7 @@ export const TimeframePopover: React.FC<TimeframePopoverProps> = ({
               </button>
               <button
                 onClick={handleApplyCustom}
-                className="px-4 py-1.5 rounded-full text-xs font-medium bg-accent text-white hover:opacity-90 transition-opacity"
+                className="px-4 py-1.5 rounded-full text-xs font-medium bg-accent text-accent-contrast hover:opacity-90 transition-opacity"
               >
                 Apply range
               </button>
