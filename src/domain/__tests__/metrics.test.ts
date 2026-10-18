@@ -238,5 +238,32 @@ describe("Design System & Color Tokens", () => {
     useSettingsStore.getState().setCustomLogo(null);
     expect(useSettingsStore.getState().customLogo).toBeNull();
   });
+
+  it("stores, marks as read, and manages inbox messages in settingsStore", async () => {
+    const { useSettingsStore } = await import("../../store/settingsStore");
+    const store = useSettingsStore.getState();
+
+    const initialCount = store.inboxMessages.length;
+    const newMsg = store.addInboxMessage({
+      name: "Test User",
+      email: "test@example.com",
+      subject: "Test Subject",
+      message: "Test message body content"
+    });
+
+    expect(newMsg.id).toBeDefined();
+    expect(newMsg.read).toBe(false);
+    expect(useSettingsStore.getState().inboxMessages.length).toBe(initialCount + 1);
+
+    // Mark as read
+    useSettingsStore.getState().markInboxMessageAsRead(newMsg.id, true);
+    const found = useSettingsStore.getState().inboxMessages.find((m) => m.id === newMsg.id);
+    expect(found?.read).toBe(true);
+
+    // Delete message
+    useSettingsStore.getState().deleteInboxMessage(newMsg.id);
+    expect(useSettingsStore.getState().inboxMessages.find((m) => m.id === newMsg.id)).toBeUndefined();
+  });
 });
+
 

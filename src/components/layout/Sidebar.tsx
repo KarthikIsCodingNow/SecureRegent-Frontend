@@ -19,6 +19,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ className = "", onItemClick }) => {
   const productName = useSettingsStore((s) => s.landing.productName);
+  const unreadInquiries = useSettingsStore((s) => s.inboxMessages?.filter((m) => !m.read).length || 0);
 
   const mainNavItems = [
     { to: "/app", label: "Overview", icon: ChartLineUp, end: true },
@@ -111,6 +112,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "", onItemClick })
                       )}
                     />
                     <span className="truncate">{item.label}</span>
+                    {item.to === "/app/admin" && unreadInquiries > 0 && (
+                      <span className="ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-accent text-accent-contrast leading-none">
+                        {unreadInquiries}
+                      </span>
+                    )}
                   </>
                 )}
               </NavLink>

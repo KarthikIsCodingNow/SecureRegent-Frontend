@@ -72,6 +72,16 @@ export interface LandingSettings {
   noiseEnabled: boolean;
 }
 
+export interface InboxMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+}
+
 export interface SettingsState {
   version: number;
   themeMode: ThemeMode;
@@ -93,6 +103,7 @@ export interface SettingsState {
   simulator: SimulatorConfig;
   landing: LandingSettings;
   customLogo: string | null;
+  inboxMessages: InboxMessage[];
 
   setThemeMode: (mode: ThemeMode) => void;
   applyPreset: (preset: ThemePreset) => void;
@@ -114,7 +125,12 @@ export interface SettingsState {
   setSimulatorConfig: (patch: Partial<SimulatorConfig>) => void;
   setLandingSettings: (patch: Partial<LandingSettings>) => void;
 
-  resetSection: (section: "theme" | "charts" | "layout" | "business" | "simulator" | "landing") => void;
+  addInboxMessage: (msg: Omit<InboxMessage, "id" | "createdAt" | "read">) => InboxMessage;
+  markInboxMessageAsRead: (id: string, read?: boolean) => void;
+  deleteInboxMessage: (id: string) => void;
+  clearInboxMessages: () => void;
+
+  resetSection: (section: "theme" | "charts" | "layout" | "business" | "simulator" | "landing" | "inbox") => void;
   resetAll: () => void;
   exportSettingsJson: () => string;
   importSettingsJson: (json: string) => { success: boolean; error?: string };
@@ -207,6 +223,27 @@ const DEFAULT_LANDING_CONFIG: LandingSettings = {
   stop4: "#B9C7D3",
   noiseEnabled: true
 };
+
+export const DEFAULT_INBOX_MESSAGES: InboxMessage[] = [
+  {
+    id: "INQ-8821",
+    name: "Vikram Malhotra",
+    email: "vikram@fintechventures.in",
+    subject: "Enterprise API Integration & Custom Dashboard",
+    message: "Hi Karthikeya, we were reviewing the Secure-Regent platform architecture and would like to schedule a technical discussion regarding white-labeling and multi-tenant security reporting.",
+    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    read: false
+  },
+  {
+    id: "INQ-7409",
+    name: "Ananya Deshmukh",
+    email: "ananya.d@regentadvisory.com",
+    subject: "Platform Feedback & Scheduled Reports Query",
+    message: "Great work on the real-time simulation and drill-down metrics! We have a quick question about scheduling automated weekly revenue reports.",
+    createdAt: new Date(Date.now() - 3600000 * 26).toISOString(),
+    read: true
+  }
+];
 
 const DEFAULT_LAYOUTS: Record<string, WidgetLayoutItem[]> = {
   overview: [
@@ -353,7 +390,8 @@ function saveState(state: SettingsState) {
       business: state.business,
       simulator: state.simulator,
       landing: state.landing,
-      customLogo: state.customLogo
+      customLogo: state.customLogo,
+      inboxMessages: state.inboxMessages
     });
     localStorage.setItem(STORAGE_KEY, serialized);
   } catch {
@@ -384,6 +422,43 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   simulator: saved.simulator ? { ...DEFAULT_SIMULATOR_CONFIG, ...saved.simulator } : { ...DEFAULT_SIMULATOR_CONFIG },
   landing: saved.landing ? { ...DEFAULT_LANDING_CONFIG, ...saved.landing } : { ...DEFAULT_LANDING_CONFIG },
   customLogo: saved.customLogo || null,
+  inboxMessages: saved.inboxMessages && Array.isArray(saved.inboxMessages) ? saved.inboxMessages : [...DEFAULT_INBOX_MESSAGES],
+
+  addInboxMessage: (msg) => {
+    const newMsg: InboxMessage = {
+      id: `INQ-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: msg.name,
+      email: msg.email,
+      subject: msg.subject,
+      message: msg.message,
+      createdAt: new Date().toISOString(),
+      read: false
+    };
+    set((state) => ({
+      inboxMessages: [newMsg, ...state.inboxMessages]
+    }));
+    saveState(get());
+    return newMsg;
+  },
+
+  markInboxMessageAsRead: (id, read = true) => {
+    set((state) => ({
+      inboxMessages: state.inboxMessages.map((m) => (m.id === id ? { ...m, read } : m))
+    }));
+    saveState(get());
+  },
+
+  deleteInboxMessage: (id) => {
+    set((state) => ({
+      inboxMessages: state.inboxMessages.filter((m) => m.id !== id)
+    }));
+    saveState(get());
+  },
+
+  clearInboxMessages: () => {
+    set({ inboxMessages: [] });
+    saveState(get());
+  },
 
   setCustomLogo: (logo) => {
     set({ customLogo: logo });
@@ -558,6 +633,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       set({ simulator: { ...DEFAULT_SIMULATOR_CONFIG } });
     } else if (section === "landing") {
       set({ landing: { ...DEFAULT_LANDING_CONFIG } });
+    } else if (section === "inbox") {
+      set({ inboxMessages: [...DEFAULT_INBOX_MESSAGES] });
     }
     saveState(get());
   },
@@ -579,7 +656,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       business: { ...DEFAULT_BUSINESS_CONFIG },
       simulator: { ...DEFAULT_SIMULATOR_CONFIG },
       landing: { ...DEFAULT_LANDING_CONFIG },
-      customLogo: null
+      customLogo: null,
+      inboxMessages: [...DEFAULT_INBOX_MESSAGES]
     });
     applyCssTokensToDom(get());
     saveState(get());
@@ -605,7 +683,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         business: s.business,
         simulator: s.simulator,
         landing: s.landing,
-        customLogo: s.customLogo
+        customLogo: s.customLogo,
+        inboxMessages: s.inboxMessages
       },
       null,
       2
@@ -639,7 +718,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         business: { ...state.business, ...(data.business || {}) },
         simulator: { ...state.simulator, ...(data.simulator || {}) },
         landing: { ...state.landing, ...(data.landing || {}) },
-        customLogo: typeof data.customLogo !== "undefined" ? data.customLogo : state.customLogo
+        customLogo: typeof data.customLogo !== "undefined" ? data.customLogo : state.customLogo,
+        inboxMessages: Array.isArray(data.inboxMessages) ? data.inboxMessages : state.inboxMessages
       }));
 
       const next = get();

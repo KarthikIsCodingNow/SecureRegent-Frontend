@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   X,
@@ -8,8 +9,11 @@ import {
   GlobeHemisphereEast,
   Check,
   Copy,
-  PaperPlaneTilt
+  PaperPlaneTilt,
+  Tray,
+  ArrowSquareOut
 } from "@phosphor-icons/react";
+import { useSettingsStore } from "../../store/settingsStore";
 
 interface ContactModalProps {
   open: boolean;
@@ -17,9 +21,18 @@ interface ContactModalProps {
 }
 
 export const ContactModal: React.FC<ContactModalProps> = ({ open, onOpenChange }) => {
+  const navigate = useNavigate();
+  const addInboxMessage = useSettingsStore((s) => s.addInboxMessage);
+
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [submittedInquiry, setSubmittedInquiry] = useState<{
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -41,10 +54,18 @@ export const ContactModal: React.FC<ContactModalProps> = ({ open, onOpenChange }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) return;
+
+    addInboxMessage({
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      subject: formData.subject.trim() || "Website Developer Inquiry",
+      message: formData.message.trim()
+    });
+
+    setSubmittedInquiry({ ...formData });
     setFormSubmitted(true);
-    setTimeout(() => {
-      setFormData({ name: "", email: "", subject: "", message: "" });
-    }, 500);
+    setFormData({ name: "", email: "", subject: "", message: "" });
   };
 
   return (
@@ -184,22 +205,76 @@ export const ContactModal: React.FC<ContactModalProps> = ({ open, onOpenChange }
               </div>
 
               {formSubmitted ? (
-                <div className="p-5 rounded-tile bg-positive/10 border border-positive/20 text-center space-y-2 animate-in fade-in duration-200">
-                  <div className="w-8 h-8 rounded-full bg-positive text-white flex items-center justify-center mx-auto">
-                    <Check size={18} weight="bold" />
+                <div className="p-5 rounded-tile bg-positive/10 border border-positive/20 space-y-4 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-positive text-white flex items-center justify-center shrink-0">
+                      <Check size={20} weight="bold" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-positive">
+                        Message Delivered & Saved to Admin Inbox!
+                      </div>
+                      <div className="text-xs text-text-secondary mt-0.5">
+                        Your inquiry is stored in Karthikeya Ganugula's Secure-Regent Admin Console Inbox.
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm font-semibold text-positive">
-                    Message Sent Successfully!
+
+                  {submittedInquiry && (
+                    <div className="p-3 rounded-tile bg-card border border-hairline text-xs space-y-1 text-left">
+                      <div className="flex items-center justify-between text-[11px] text-text-tertiary">
+                        <span>Recipient: <strong className="text-text-primary font-medium">karthikeyaganugula07@gmail.com</strong></span>
+                        <span className="text-positive font-medium">Saved locally</span>
+                      </div>
+                      <div className="font-semibold text-text-primary truncate">
+                        {submittedInquiry.subject}
+                      </div>
+                      <div className="text-text-secondary text-[11px] truncate">
+                        From: {submittedInquiry.name} ({submittedInquiry.email})
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-hairline/60">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onOpenChange(false);
+                          navigate("/app/admin");
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-accent-contrast text-xs font-medium hover:opacity-90 shadow-sm transition-opacity"
+                      >
+                        <Tray size={14} weight="bold" />
+                        <span>View in Admin Inbox</span>
+                      </button>
+
+                      {submittedInquiry && (
+                        <a
+                          href={`mailto:karthikeyaganugula07@gmail.com?subject=${encodeURIComponent(
+                            submittedInquiry.subject
+                          )}&body=${encodeURIComponent(
+                            `From: ${submittedInquiry.name} (${submittedInquiry.email})\n\n${submittedInquiry.message}`
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-hairline text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-canvas transition-colors"
+                          title="Open default email application to also send a copy directly"
+                        >
+                          <ArrowSquareOut size={14} />
+                          <span>Also send via Email app</span>
+                        </a>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormSubmitted(false)}
+                      className="text-xs text-text-tertiary hover:text-accent hover:underline font-medium"
+                    >
+                      Send another message
+                    </button>
                   </div>
-                  <div className="text-xs text-text-secondary">
-                    Thank you. Karthikeya Ganugula has received your inquiry at karthikeyaganugula07@gmail.com.
-                  </div>
-                  <button
-                    onClick={() => setFormSubmitted(false)}
-                    className="mt-2 text-xs text-accent hover:underline font-medium inline-block"
-                  >
-                    Send another inquiry
-                  </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-3">

@@ -2,7 +2,21 @@ import React, { useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Switch from "@radix-ui/react-switch";
 import * as Slider from "@radix-ui/react-slider";
-import { ArrowCounterClockwise, DownloadSimple, UploadSimple, Trash, Image as ImageIcon, CheckCircle, WarningCircle } from "@phosphor-icons/react";
+import {
+  ArrowCounterClockwise,
+  DownloadSimple,
+  UploadSimple,
+  Trash,
+  Image as ImageIcon,
+  CheckCircle,
+  WarningCircle,
+  Tray,
+  EnvelopeSimple,
+  MagnifyingGlass,
+  Sparkle,
+  Check,
+  ArrowSquareOut
+} from "@phosphor-icons/react";
 import { useSettingsStore, ThemePreset, ThemeMode, ColorTokens } from "@/store/settingsStore";
 import { useDataStore } from "@/store/dataStore";
 import { calculateContrast, getContrastBadge, isProhibitedHue } from "@/utils/colors";
@@ -19,6 +33,71 @@ export const AdminPage: React.FC = () => {
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [jsonSuccess, setJsonSuccess] = useState(false);
   const [logoFeedback, setLogoFeedback] = useState<{ message: string; isError?: boolean } | null>(null);
+
+  const [inboxSearch, setInboxSearch] = useState("");
+  const [inboxFilter, setInboxFilter] = useState<"all" | "unread" | "read">("all");
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [inboxFeedback, setInboxFeedback] = useState<string | null>(null);
+
+  const unreadCount = settings.inboxMessages.filter((m) => !m.read).length;
+
+  const filteredMessages = settings.inboxMessages.filter((msg) => {
+    if (inboxFilter === "unread" && msg.read) return false;
+    if (inboxFilter === "read" && !msg.read) return false;
+    if (!inboxSearch.trim()) return true;
+    const q = inboxSearch.toLowerCase();
+    return (
+      msg.name.toLowerCase().includes(q) ||
+      msg.email.toLowerCase().includes(q) ||
+      msg.subject.toLowerCase().includes(q) ||
+      msg.message.toLowerCase().includes(q)
+    );
+  });
+
+  const activeMessage =
+    filteredMessages.find((m) => m.id === selectedMessageId) ||
+    settings.inboxMessages.find((m) => m.id === selectedMessageId) ||
+    filteredMessages[0] ||
+    null;
+
+  const handleMarkAllAsRead = () => {
+    settings.inboxMessages.forEach((m) => {
+      if (!m.read) settings.markInboxMessageAsRead(m.id, true);
+    });
+    setInboxFeedback("All inquiries marked as read.");
+    setTimeout(() => setInboxFeedback(null), 3000);
+  };
+
+  const handleSendSampleInquiry = () => {
+    const samples = [
+      {
+        name: "Aarav Singhania",
+        email: "aarav@singhaniacapital.com",
+        subject: "Secure-Regent Custom Dashboard Integration",
+        message:
+          "Hi Karthikeya,\n\nWe love the real-time simulation and drill-down metrics in Secure-Regent. Could we schedule a brief demo to discuss connecting our internal accounting feeds and quotation approval workflows?\n\nBest regards,\nAarav"
+      },
+      {
+        name: "Pooja Hegde",
+        email: "pooja.h@vertexfintech.io",
+        subject: "White-label License and Dark Mode Customization",
+        message:
+          "Hello Karthikeya,\n\nOur team is exploring adopting Secure-Regent across our wealth advisory services. Does the admin panel support multi-client branding and customized CSV exports?\n\nThanks,\nPooja"
+      },
+      {
+        name: "Rohan Patel",
+        email: "rohan.p@catalystops.in",
+        subject: "Direct Developer Contact: Technical Architecture Query",
+        message:
+          "Hello Karthikeya Ganugula,\n\nWe are impressed by the smooth page transitions and the analogue stopwatch KPI counters. What tech stack was chosen for the metrics engine?\n\nLooking forward to hearing from you,\nRohan"
+      }
+    ];
+    const picked = samples[Math.floor(Math.random() * samples.length)];
+    const created = settings.addInboxMessage(picked);
+    setSelectedMessageId(created.id);
+    setInboxFeedback(`Sample inquiry from ${created.name} added to inbox!`);
+    setTimeout(() => setInboxFeedback(null), 3500);
+  };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -199,16 +278,21 @@ export const AdminPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-        <div className="xl:col-span-7">
+        <div className={activeTab === "inbox" ? "xl:col-span-12" : "xl:col-span-7"}>
           <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <Tabs.List className="flex items-center gap-1.5 p-1 bg-card rounded-full border border-hairline overflow-x-auto shadow-sm">
-              {["theme", "charts", "layout", "business", "data", "landing"].map((tab) => (
+              {["theme", "charts", "layout", "business", "data", "landing", "inbox"].map((tab) => (
                 <Tabs.Trigger
                   key={tab}
                   value={tab}
-                  className="px-4 py-2 rounded-full text-xs font-medium capitalize text-text-secondary hover:text-text-primary transition-all data-[state=active]:bg-accent-soft data-[state=active]:text-accent whitespace-nowrap"
+                  className="px-4 py-2 rounded-full text-xs font-medium capitalize text-text-secondary hover:text-text-primary transition-all data-[state=active]:bg-accent-soft data-[state=active]:text-accent whitespace-nowrap flex items-center gap-1.5"
                 >
-                  {tab}
+                  <span>{tab === "inbox" ? "Inquiries Inbox" : tab}</span>
+                  {tab === "inbox" && unreadCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-accent text-accent-contrast leading-none">
+                      {unreadCount}
+                    </span>
+                  )}
                 </Tabs.Trigger>
               ))}
             </Tabs.List>
@@ -781,65 +865,365 @@ export const AdminPage: React.FC = () => {
                 </div>
               </div>
             </Tabs.Content>
+
+            <Tabs.Content value="inbox" className="bg-card rounded-card shadow-card p-6 space-y-6 outline-none">
+              {/* Top Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-hairline">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-text-primary font-display flex items-center gap-2">
+                      <Tray size={18} className="text-accent" />
+                      <span>Inquiries & Developer Contact Inbox</span>
+                    </h3>
+                    {unreadCount > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-accent-soft text-accent border border-accent/20">
+                        {unreadCount} unread
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-text-secondary mt-1">
+                    Messages submitted via website contact & developer section, addressed to{" "}
+                    <strong className="text-text-primary font-medium">Karthikeya Ganugula (karthikeyaganugula07@gmail.com)</strong>.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleSendSampleInquiry}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-hairline text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-canvas transition-colors"
+                    title="Simulate receiving a new website visitor inquiry"
+                  >
+                    <Sparkle size={13} className="text-accent" />
+                    <span>Generate Sample Inquiry</span>
+                  </button>
+
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-hairline text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-canvas transition-colors"
+                    >
+                      <Check size={13} className="text-positive" />
+                      <span>Mark all as read</span>
+                    </button>
+                  )}
+
+                  {settings.inboxMessages.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to clear all inquiries?")) {
+                          settings.clearInboxMessages();
+                          setSelectedMessageId(null);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-hairline text-xs font-medium text-text-secondary hover:text-negative hover:border-negative/30 hover:bg-negative/5 transition-colors"
+                    >
+                      <Trash size={13} />
+                      <span>Clear inbox</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {inboxFeedback && (
+                <div className="p-3 rounded-tile bg-positive/10 border border-positive/20 text-xs text-positive flex items-center gap-2 animate-in fade-in duration-150">
+                  <CheckCircle size={15} weight="fill" className="shrink-0" />
+                  <span>{inboxFeedback}</span>
+                </div>
+              )}
+
+              {/* Search and Filters */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative flex-1 max-w-sm">
+                  <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                  <input
+                    type="text"
+                    placeholder="Search inquiries by name, email, subject..."
+                    value={inboxSearch}
+                    onChange={(e) => setInboxSearch(e.target.value)}
+                    className="w-full pl-9 pr-7 py-1.5 rounded-full bg-canvas border border-hairline text-xs font-medium text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                  {inboxSearch && (
+                    <button
+                      onClick={() => setInboxSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary text-xs font-bold"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 p-1 bg-canvas rounded-full border border-hairline shrink-0">
+                  {(["all", "unread", "read"] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setInboxFilter(filter)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${
+                        inboxFilter === filter
+                          ? "bg-card text-text-primary shadow-sm"
+                          : "text-text-secondary hover:text-text-primary"
+                      }`}
+                    >
+                      {filter === "all"
+                        ? `All (${settings.inboxMessages.length})`
+                        : filter === "unread"
+                        ? `Unread (${unreadCount})`
+                        : `Read (${settings.inboxMessages.length - unreadCount})`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Main Two-Column Inbox View */}
+              {settings.inboxMessages.length === 0 ? (
+                <div className="p-12 text-center rounded-card bg-canvas/40 border border-hairline space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-accent-soft text-accent flex items-center justify-center mx-auto">
+                    <Tray size={24} weight="duotone" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-text-primary">Inbox is Empty</h4>
+                    <p className="text-xs text-text-secondary mt-1 max-w-md mx-auto">
+                      When website visitors or clients submit inquiries in the Developer Contact form, their messages will arrive here.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleSendSampleInquiry}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-accent-contrast text-xs font-medium hover:opacity-90 shadow-sm"
+                  >
+                    <Sparkle size={14} weight="bold" />
+                    <span>Create Sample Inquiry</span>
+                  </button>
+                </div>
+              ) : filteredMessages.length === 0 ? (
+                <div className="p-8 text-center rounded-tile bg-canvas/40 border border-hairline text-xs text-text-secondary">
+                  No messages match your current search or filter.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                  {/* Messages List (Left column) */}
+                  <div className="lg:col-span-5 space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                    {filteredMessages.map((msg) => {
+                      const isSelected = activeMessage?.id === msg.id;
+                      return (
+                        <div
+                          key={msg.id}
+                          onClick={() => {
+                            setSelectedMessageId(msg.id);
+                            if (!msg.read) {
+                              settings.markInboxMessageAsRead(msg.id, true);
+                            }
+                          }}
+                          className={`p-3.5 rounded-tile border transition-all cursor-pointer text-left relative group ${
+                            isSelected
+                              ? "bg-accent-soft/40 border-accent shadow-sm"
+                              : msg.read
+                              ? "bg-card border-hairline hover:border-text-secondary/30"
+                              : "bg-card border-accent/40 shadow-sm hover:border-accent"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={`w-2 h-2 rounded-full shrink-0 ${msg.read ? "bg-transparent" : "bg-accent"}`} />
+                              <span className={`text-xs truncate ${msg.read ? "font-medium text-text-secondary" : "font-bold text-text-primary"}`}>
+                                {msg.name}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-text-tertiary whitespace-nowrap">
+                              {new Date(msg.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                            </span>
+                          </div>
+
+                          <div className={`text-xs truncate mb-1 ${msg.read ? "text-text-primary" : "font-semibold text-text-primary"}`}>
+                            {msg.subject}
+                          </div>
+
+                          <div className="text-[11px] text-text-secondary line-clamp-2 leading-relaxed">
+                            {msg.message}
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-hairline/60 text-[10px] text-text-tertiary">
+                            <span className="truncate">{msg.email}</span>
+                            <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-canvas border border-hairline">
+                              {msg.id}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Message Reader Pane (Right column) */}
+                  <div className="lg:col-span-7 bg-canvas/40 rounded-card border border-hairline p-5 space-y-5">
+                    {activeMessage ? (
+                      <>
+                        {/* Header / Actions */}
+                        <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-hairline">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-accent/20">
+                                {activeMessage.id}
+                              </span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                                activeMessage.read
+                                  ? "bg-hairline text-text-secondary"
+                                  : "bg-positive/10 text-positive border border-positive/20"
+                              }`}>
+                                {activeMessage.read ? "Read" : "Unread"}
+                              </span>
+                              <span className="text-[11px] text-text-tertiary">
+                                {new Date(activeMessage.createdAt).toLocaleString(undefined, {
+                                  dateStyle: "medium",
+                                  timeStyle: "short"
+                                })}
+                              </span>
+                            </div>
+                            <h3 className="text-base font-semibold text-text-primary font-display">
+                              {activeMessage.subject}
+                            </h3>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => settings.markInboxMessageAsRead(activeMessage.id, !activeMessage.read)}
+                              className="px-2.5 py-1 rounded-full border border-hairline text-[11px] font-medium text-text-secondary hover:text-text-primary hover:bg-card transition-colors"
+                              title="Toggle read status"
+                            >
+                              {activeMessage.read ? "Mark unread" : "Mark read"}
+                            </button>
+                            <button
+                              onClick={() => {
+                                settings.deleteInboxMessage(activeMessage.id);
+                                if (selectedMessageId === activeMessage.id) {
+                                  setSelectedMessageId(null);
+                                }
+                              }}
+                              className="p-1.5 rounded-full border border-hairline text-text-tertiary hover:text-negative hover:border-negative/30 hover:bg-negative/5 transition-colors"
+                              title="Delete inquiry"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Sender details card */}
+                        <div className="p-3.5 rounded-tile bg-card border border-hairline space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-accent-soft text-accent font-semibold text-xs flex items-center justify-center shrink-0">
+                                {activeMessage.name.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-text-primary">
+                                  {activeMessage.name}
+                                </div>
+                                <a
+                                  href={`mailto:${activeMessage.email}`}
+                                  className="text-[11px] text-accent hover:underline flex items-center gap-1 font-mono"
+                                >
+                                  <span>{activeMessage.email}</span>
+                                  <ArrowSquareOut size={12} />
+                                </a>
+                              </div>
+                            </div>
+
+                            <a
+                              href={`mailto:${activeMessage.email}?subject=${encodeURIComponent(
+                                `Re: ${activeMessage.subject}`
+                              )}&body=${encodeURIComponent(
+                                `Hi ${activeMessage.name},\n\nThank you for reaching out regarding "${activeMessage.subject}".\n\nBest regards,\nKarthikeya Ganugula\nPlatform Architect · Secure-Regent`
+                              )}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-accent-contrast text-xs font-medium hover:opacity-90 shadow-sm transition-opacity"
+                            >
+                              <EnvelopeSimple size={14} weight="bold" />
+                              <span>Reply via Email</span>
+                            </a>
+                          </div>
+
+                          <div className="text-[11px] text-text-tertiary pt-2 border-t border-hairline flex items-center justify-between">
+                            <span>Addressed to: <strong className="text-text-secondary font-medium">karthikeyaganugula07@gmail.com</strong></span>
+                            <span>Developer: Karthikeya Ganugula · India 🇮🇳</span>
+                          </div>
+                        </div>
+
+                        {/* Message Body */}
+                        <div className="p-5 rounded-tile bg-card border border-hairline">
+                          <div className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">
+                            Message Content
+                          </div>
+                          <div className="text-xs text-text-primary whitespace-pre-wrap leading-relaxed font-sans">
+                            {activeMessage.message}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="p-12 text-center text-xs text-text-secondary">
+                        Select an inquiry from the list on the left to read its full message and reply.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Tabs.Content>
           </Tabs.Root>
         </div>
 
-        <div className="xl:col-span-5 sticky top-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-              Live Component Preview
-            </span>
-            <span className="text-[11px] text-text-secondary">Updates instantly</span>
-          </div>
+        {activeTab !== "inbox" && (
+          <div className="xl:col-span-5 sticky top-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                Live Component Preview
+              </span>
+              <span className="text-[11px] text-text-secondary">Updates instantly</span>
+            </div>
 
-          <KpiCard
-            label="Revenue booked preview"
-            value={3450000}
-            formattedValue={formatCurrency(3450000, true, settings.charts.currencySymbol)}
-            delta={{
-              text: "+14.2%",
-              value: 14.2,
-              isNew: false,
-              isNeutral: false,
-              isPositive: true,
-              inverted: false
-            }}
-            sparklineData={[30, 42, 38, 55, 62, 75, 88]}
-          />
-
-          <div className="bg-card rounded-card p-6 shadow-card">
-            <div className="text-xs text-text-secondary font-medium mb-3">Activity weekly velocity</div>
-            <BaseChart
-              option={previewOption}
-              height={190}
-              ariaLabel="Admin preview chart"
+            <KpiCard
+              label="Revenue booked preview"
+              value={3450000}
+              formattedValue={formatCurrency(3450000, true, settings.charts.currencySymbol)}
+              delta={{
+                text: "+14.2%",
+                value: 14.2,
+                isNew: false,
+                isNeutral: false,
+                isPositive: true,
+                inverted: false
+              }}
+              sparklineData={[30, 42, 38, 55, 62, 75, 88]}
             />
-          </div>
 
-          <div className="bg-card rounded-card p-5 shadow-card">
-            <div className="text-xs text-text-secondary font-medium mb-3">Live table preview</div>
-            <div className="overflow-hidden rounded-tile border border-hairline">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-canvas border-b border-hairline text-text-secondary">
-                    <th className="py-2 px-3 font-medium">Service</th>
-                    <th className="py-2 px-3 font-medium text-right">Value</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-hairline">
-                  <tr>
-                    <td className="py-2 px-3 font-medium text-text-primary">Private Limited Company</td>
-                    <td className="py-2 px-3 text-right tabular text-text-primary">₹14,500</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 font-medium text-text-primary">GST Annual Compliance</td>
-                    <td className="py-2 px-3 text-right tabular text-text-primary">₹28,000</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="bg-card rounded-card p-6 shadow-card">
+              <div className="text-xs text-text-secondary font-medium mb-3">Activity weekly velocity</div>
+              <BaseChart
+                option={previewOption}
+                height={190}
+                ariaLabel="Admin preview chart"
+              />
+            </div>
+
+            <div className="bg-card rounded-card p-5 shadow-card">
+              <div className="text-xs text-text-secondary font-medium mb-3">Live table preview</div>
+              <div className="overflow-hidden rounded-tile border border-hairline">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-canvas border-b border-hairline text-text-secondary">
+                      <th className="py-2 px-3 font-medium">Service</th>
+                      <th className="py-2 px-3 font-medium text-right">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-hairline">
+                    <tr>
+                      <td className="py-2 px-3 font-medium text-text-primary">Private Limited Company</td>
+                      <td className="py-2 px-3 text-right tabular text-text-primary">₹14,500</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 font-medium text-text-primary">GST Annual Compliance</td>
+                      <td className="py-2 px-3 text-right tabular text-text-primary">₹28,000</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
