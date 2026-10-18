@@ -57,7 +57,15 @@ export const BaseChart: React.FC<BaseChartProps> = ({
 
     resizeObserver.observe(containerRef.current);
 
+    // Call resize across animation frames to guarantee full dimensions inside animated modals/drawers
+    const t1 = setTimeout(() => instance.resize(), 50);
+    const t2 = setTimeout(() => instance.resize(), 200);
+    const t3 = setTimeout(() => instance.resize(), 400);
+
     return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
       resizeObserver.disconnect();
     };
   }, [option, onChartClick]);

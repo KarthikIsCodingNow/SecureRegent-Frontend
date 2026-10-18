@@ -174,3 +174,30 @@ export function formatRelativeTime(dateStr: string, now = new Date()): string {
   const diffInMonths = Math.floor(diffInDays / 30);
   return `${diffInMonths}mo ago`;
 }
+
+export function safeParseInteger(val: unknown, fallback = 0): number {
+  if (typeof val === "number") {
+    return Number.isSafeInteger(val) ? val : Math.trunc(Number.isFinite(val) ? val : fallback);
+  }
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (!trimmed) return fallback;
+    const parsed = Number(trimmed);
+    return Number.isSafeInteger(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
+export function safeParseFloat(val: unknown, fallback = 0): number {
+  if (typeof val === "number") {
+    return Number.isFinite(val) ? val : fallback;
+  }
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (!trimmed) return fallback;
+    const parsed = parseFloat(trimmed);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+

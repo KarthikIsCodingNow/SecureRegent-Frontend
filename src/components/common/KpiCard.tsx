@@ -53,19 +53,22 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         }
       }}
       className={clsx(
-        "bg-card rounded-card p-6 shadow-card transition-all duration-200 flex flex-col justify-between relative overflow-hidden",
+        "bg-card rounded-card p-4 sm:p-5 shadow-card transition-all duration-200 flex flex-col justify-between relative overflow-hidden",
         onClick && "cursor-pointer hover:-translate-y-0.5 hover:shadow-flyout",
         className
       )}
     >
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <span className="text-sm font-normal text-text-secondary truncate">
+      <div className="flex items-start justify-between gap-1.5 mb-2.5">
+        <span
+          className="text-xs sm:text-[13px] 2xl:text-sm font-medium text-text-secondary leading-snug line-clamp-2 min-h-[2.5em] flex-1"
+          title={label}
+        >
           {label}
         </span>
         {delta && (
           <div
             className={clsx(
-              "flex items-center gap-1 text-xs font-medium tabular px-2 py-0.5 rounded-full shrink-0",
+              "flex items-center gap-0.5 text-[10px] sm:text-[11px] font-medium tabular px-1.5 py-0.5 rounded-full shrink-0 mt-0.5",
               delta.isNeutral
                 ? "bg-text-tertiary/10 text-text-tertiary"
                 : delta.isPositive
@@ -74,27 +77,28 @@ export const KpiCard: React.FC<KpiCardProps> = ({
             )}
           >
             {delta.isNeutral ? (
-              <Minus size={12} weight="bold" />
+              <Minus size={10} weight="bold" />
             ) : delta.value > 0 ? (
-              <CaretUp size={12} weight="fill" />
+              <CaretUp size={10} weight="fill" />
             ) : (
-              <CaretDown size={12} weight="fill" />
+              <CaretDown size={10} weight="fill" />
             )}
             <span>{delta.text}</span>
           </div>
         )}
       </div>
 
-      <div className="flex items-end justify-between gap-4 mt-1">
-        <div className="font-display text-[36px] leading-[40px] font-medium tracking-tight text-text-primary tabular">
+      <div className="flex items-end justify-between gap-2 mt-auto">
+        <div className="font-display text-2xl sm:text-[26px] 2xl:text-[30px] leading-tight font-medium tracking-tight text-text-primary tabular min-w-0 truncate">
           <AnalogRollingCounter value={displayString} />
         </div>
 
-        <div className="shrink-0 w-[120px] h-[36px]">
+        <div className="shrink-0 w-16 sm:w-20 2xl:w-24 h-7 sm:h-8">
           <svg
             width="100%"
             height="100%"
             viewBox={`0 0 ${width} ${height}`}
+            preserveAspectRatio="none"
             className="overflow-visible"
             aria-hidden="true"
           >

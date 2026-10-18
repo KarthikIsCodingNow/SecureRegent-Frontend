@@ -35,8 +35,13 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
   items
 }) => {
   const navigate = useNavigate();
-  const isDark = useSettingsStore((s) => s.themeMode === "dark");
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const isDark = themeMode === "dark";
+  const lightColors = useSettingsStore((s) => s.lightColors);
+  const darkColors = useSettingsStore((s) => s.darkColors);
+  const accentColor = isDark ? darkColors.accent : lightColors.accent;
   const currencySymbol = useSettingsStore((s) => s.charts.currencySymbol) || "₹";
+
   const [searchTerm, setSearchTerm] = useState("");
   const [activeMetricView, setActiveMetricView] = useState<"count" | "amount">("count");
 
@@ -60,11 +65,33 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
   }, [items]);
 
   // Aggregate items chronologically for the analytical graph
-  const { chartDates, chartCounts, chartAmounts, peakDay } = useMemo(() => {
+  const { chartDates, chartCounts, chartAmounts, peakDay, isDummyData } = useMemo(() => {
+    if (items.length === 0) {
+      // Provide realistic 7-day dummy baseline distribution so graph is never blank
+      const today = new Date();
+      const dummyDates: string[] = [];
+      const dummyCounts: number[] = [6, 11, 9, 15, 12, 18, 14];
+      const dummyAmounts: number[] = [45000, 85000, 60000, 120000, 95000, 160000, 110000];
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        dummyDates.push(d.toISOString().slice(5, 10));
+      }
+
+      return {
+        chartDates: dummyDates,
+        chartCounts: dummyCounts,
+        chartAmounts: dummyAmounts,
+        peakDay: dummyDates[5] || "Today",
+        isDummyData: true
+      };
+    }
+
     const dateMap: Record<string, { count: number; amount: number }> = {};
 
     items.forEach((item) => {
-      const d = item.date ? item.date.slice(0, 10) : "N/A";
+      const d = item.date ? item.date.slice(0, 10) : new Date().toISOString().slice(0, 10);
       if (!dateMap[d]) {
         dateMap[d] = { count: 0, amount: 0 };
       }
@@ -72,13 +99,30 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
       dateMap[d].amount += item.amount || 0;
     });
 
-    const sortedDates = Object.keys(dateMap).sort();
-    const counts = sortedDates.map((d) => dateMap[d].count);
-    const amounts = sortedDates.map((d) => dateMap[d].amount);
+    let sortedDates = Object.keys(dateMap).sort();
+    let counts = sortedDates.map((d) => dateMap[d].count);
+    let amounts = sortedDates.map((d) => dateMap[d].amount);
+
+    // If only 1 date exists, generate a 3-point contextual span so line/area or bar renders visually
+    if (sortedDates.length === 1) {
+      const singleDate = sortedDates[0];
+      const parsed = new Date(singleDate);
+      const prevDate = new Date(parsed);
+      prevDate.setDate(parsed.getDate() - 1);
+      const nextDate = new Date(parsed);
+      nextDate.setDate(parsed.getDate() + 1);
+
+      const dPrevStr = prevDate.toISOString().slice(0, 10);
+      const dNextStr = nextDate.toISOString().slice(0, 10);
+
+      sortedDates = [dPrevStr, singleDate, dNextStr];
+      counts = [0, counts[0], 0];
+      amounts = [0, amounts[0], 0];
+    }
 
     let maxCount = 0;
     let peak = sortedDates[0] || "N/A";
-    sortedDates.forEach((d) => {
+    Object.keys(dateMap).forEach((d) => {
       if (dateMap[d].count > maxCount) {
         maxCount = dateMap[d].count;
         peak = d;
@@ -86,10 +130,11 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
     });
 
     return {
-      chartDates: sortedDates,
+      chartDates: sortedDates.map((d) => (d.length >= 10 ? d.slice(5) : d)),
       chartCounts: counts,
       chartAmounts: amounts,
-      peakDay: peak
+      peakDay: peak,
+      isDummyData: false
     };
   }, [items]);
 
@@ -106,6 +151,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
   const chartOption: EChartsOption = useMemo(() => {
     const isAmountView = hasAmounts && activeMetricView === "amount";
     const dataValues = isAmountView ? chartAmounts : chartCounts;
+    const isBarType = chartDates.length <= 3;
 
     return {
       tooltip: {
@@ -125,19 +171,20 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
             : `${p.value} ${p.value === 1 ? "record" : "records"}`;
           return `
             <div style="font-weight: 600; margin-bottom: 2px;">${p.name}</div>
-            <div style="color: var(--accent); font-weight: 500;">${val}</div>
+            <div style="color: ${accentColor}; font-weight: 600;">${val}</div>
           `;
         }
       },
       grid: {
         top: 24,
-        right: 12,
+        right: 16,
         bottom: 24,
-        left: 36
+        left: 16,
+        containLabel: true
       },
       xAxis: {
         type: "category",
-        data: chartDates.map((d) => (d.length >= 10 ? d.slice(5) : d)),
+        data: chartDates,
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
@@ -151,7 +198,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
         axisTick: { show: false },
         splitLine: {
           lineStyle: {
-            color: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
+            color: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)",
             type: "dashed"
           }
         },
@@ -169,37 +216,50 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
         }
       },
       series: [
-        {
-          name: isAmountView ? "Value" : "Volume",
-          type: "line",
-          smooth: 0.35,
-          data: dataValues,
-          symbolSize: 4,
-          itemStyle: {
-            color: "var(--accent)"
-          },
-          lineStyle: {
-            width: 2.5,
-            color: "var(--accent)"
-          },
-          areaStyle: {
-            color: {
-              type: "linear",
-              x: 0,
-              y: 0,
-              x2: 0,
-              y2: 1,
-              colorStops: [
-                { offset: 0, color: "var(--accent)" },
-                { offset: 1, color: "transparent" }
-              ]
-            },
-            opacity: 0.16
-          }
-        }
+        isBarType
+          ? {
+              name: isAmountView ? "Value" : "Volume",
+              type: "bar",
+              barMaxWidth: 32,
+              data: dataValues,
+              itemStyle: {
+                color: accentColor,
+                borderRadius: [4, 4, 0, 0]
+              }
+            }
+          : {
+              name: isAmountView ? "Value" : "Volume",
+              type: "line",
+              smooth: 0.35,
+              showSymbol: true,
+              symbol: "circle",
+              symbolSize: 6,
+              data: dataValues,
+              itemStyle: {
+                color: accentColor
+              },
+              lineStyle: {
+                width: 2.5,
+                color: accentColor
+              },
+              areaStyle: {
+                color: {
+                  type: "linear",
+                  x: 0,
+                  y: 0,
+                  x2: 0,
+                  y2: 1,
+                  colorStops: [
+                    { offset: 0, color: accentColor },
+                    { offset: 1, color: isDark ? "rgba(24, 27, 31, 0)" : "rgba(255, 255, 255, 0)" }
+                  ]
+                },
+                opacity: 0.22
+              }
+            }
       ]
     };
-  }, [chartDates, chartCounts, chartAmounts, hasAmounts, activeMetricView, isDark, currencySymbol]);
+  }, [chartDates, chartCounts, chartAmounts, hasAmounts, activeMetricView, isDark, currencySymbol, accentColor]);
 
   // Filtered items based on search term
   const filteredItems = useMemo(() => {
@@ -252,39 +312,45 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
 
           <div className="flex-1 overflow-y-auto">
             {/* Analytical Graph Section */}
-            {items.length > 0 && (
-              <div className="p-5 border-b border-hairline bg-canvas/40 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="p-5 border-b border-hairline bg-canvas/40 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">
                     <ChartLineUp size={14} className="text-accent" />
                     <span>Distribution & Trend Analysis</span>
                   </div>
-
-                  {hasAmounts && (
-                    <div className="flex items-center gap-1 p-0.5 bg-card border border-hairline rounded-full text-xs">
-                      <button
-                        onClick={() => setActiveMetricView("count")}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                          activeMetricView === "count"
-                            ? "bg-accent text-accent-contrast shadow-sm"
-                            : "text-text-secondary hover:text-text-primary"
-                        }`}
-                      >
-                        Count
-                      </button>
-                      <button
-                        onClick={() => setActiveMetricView("amount")}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                          activeMetricView === "amount"
-                            ? "bg-accent text-accent-contrast shadow-sm"
-                            : "text-text-secondary hover:text-text-primary"
-                        }`}
-                      >
-                        Value ({currencySymbol})
-                      </button>
-                    </div>
+                  {isDummyData && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-accent/20">
+                      Baseline Sample Preview
+                    </span>
                   )}
                 </div>
+
+                {hasAmounts && (
+                  <div className="flex items-center gap-1 p-0.5 bg-card border border-hairline rounded-full text-xs">
+                    <button
+                      onClick={() => setActiveMetricView("count")}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                        activeMetricView === "count"
+                          ? "bg-accent text-accent-contrast shadow-sm"
+                          : "text-text-secondary hover:text-text-primary"
+                      }`}
+                    >
+                      Count
+                    </button>
+                    <button
+                      onClick={() => setActiveMetricView("amount")}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                        activeMetricView === "amount"
+                          ? "bg-accent text-accent-contrast shadow-sm"
+                          : "text-text-secondary hover:text-text-primary"
+                      }`}
+                    >
+                      Value ({currencySymbol})
+                    </button>
+                  </div>
+                )}
+              </div>
 
                 {/* Analytical Summary Badges */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
@@ -331,10 +397,10 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
                 </div>
 
                 {/* ECharts Area Graph */}
-                <div className="bg-card p-3 rounded-tile border border-hairline shadow-sm">
+                <div className="bg-card p-3 rounded-tile border border-hairline shadow-sm w-full min-h-[185px]">
                   <BaseChart
                     option={chartOption}
-                    height={165}
+                    height={175}
                     ariaLabel={`${title} analytical trend chart`}
                   />
                 </div>
@@ -358,7 +424,6 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
                   </div>
                 )}
               </div>
-            )}
 
             {/* List of Values Section */}
             <div className="p-4 bg-canvas/60 border-b border-hairline sticky top-0 z-10 flex items-center justify-between gap-3 backdrop-blur-sm">

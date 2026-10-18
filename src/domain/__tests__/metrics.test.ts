@@ -264,6 +264,22 @@ describe("Design System & Color Tokens", () => {
     useSettingsStore.getState().deleteInboxMessage(newMsg.id);
     expect(useSettingsStore.getState().inboxMessages.find((m) => m.id === newMsg.id)).toBeUndefined();
   });
+
+  it("safely parses integers and floats with fallbacks against invalid inputs", async () => {
+    const { safeParseInteger, safeParseFloat } = await import("../../utils/formatters");
+
+    expect(safeParseInteger(42)).toBe(42);
+    expect(safeParseInteger("100")).toBe(100);
+    expect(safeParseInteger("invalid", 10)).toBe(10);
+    expect(safeParseInteger(null, 5)).toBe(5);
+    expect(safeParseInteger(NaN, 0)).toBe(0);
+    expect(safeParseInteger(Infinity, 0)).toBe(0);
+
+    expect(safeParseFloat(3.14)).toBe(3.14);
+    expect(safeParseFloat("24.50")).toBe(24.5);
+    expect(safeParseFloat("bad", 1.5)).toBe(1.5);
+    expect(safeParseFloat(undefined, 0)).toBe(0);
+  });
 });
 
 
