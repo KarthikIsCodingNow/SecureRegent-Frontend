@@ -13,6 +13,11 @@ export const AppLayout: React.FC = () => {
   const location = useLocation();
   const productName = useSettingsStore((s) => s.landing.productName);
 
+  const activePreset = useSettingsStore((s) => s.activePreset);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const applyPreset = useSettingsStore((s) => s.applyPreset);
+  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
+
   const {
     filter,
     setFilter,
@@ -56,21 +61,37 @@ export const AppLayout: React.FC = () => {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="lg:hidden flex items-center justify-between px-6 py-4 bg-sidebar border-b border-hairline sticky top-0 z-20">
+        <div className="lg:hidden flex items-center justify-between px-4 sm:px-6 py-3.5 bg-sidebar/95 backdrop-blur-md border-b border-hairline sticky top-0 z-20">
           <div className="flex items-center gap-2.5">
             <BrandLogo size={22} />
-            <span className="font-display font-semibold text-xs tracking-widest uppercase">
+            <span className="font-display font-semibold text-xs tracking-widest uppercase truncate max-w-[130px]">
               {productName}
             </span>
           </div>
 
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="p-2 rounded-full hover:bg-canvas text-text-secondary"
-            aria-label="Open navigation menu"
-          >
-            <List size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => applyPreset(activePreset === "minima-beige" ? "graphite" : "minima-beige")}
+              className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-canvas hover:bg-hairline/40 border border-hairline text-text-secondary transition-colors"
+              title="Toggle between Minima Beige and Graphite"
+            >
+              {activePreset === "minima-beige" ? "Default" : "Beige"}
+            </button>
+            <button
+              onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
+              className="w-8 h-8 rounded-full hover:bg-canvas text-text-secondary flex items-center justify-center text-xs border border-hairline"
+              aria-label="Toggle theme mode"
+            >
+              {themeMode === "dark" ? "🌙" : "☀️"}
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-1.5 rounded-full hover:bg-canvas text-text-secondary border border-hairline"
+              aria-label="Open navigation menu"
+            >
+              <List size={18} />
+            </button>
+          </div>
         </div>
 
         <main className="flex-1 px-6 md:px-10 py-8 max-w-[1600px] w-full mx-auto flex flex-col justify-between">

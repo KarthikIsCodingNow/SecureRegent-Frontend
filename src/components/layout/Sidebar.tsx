@@ -6,7 +6,8 @@ import {
   FileText,
   Handshake,
   ListChecks,
-  GearSix
+  GearSix,
+  Palette
 } from "@phosphor-icons/react";
 import clsx from "clsx";
 import { useSettingsStore } from "../../store/settingsStore";
@@ -20,6 +21,10 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ className = "", onItemClick }) => {
   const productName = useSettingsStore((s) => s.landing.productName);
   const unreadInquiries = useSettingsStore((s) => s.inboxMessages?.filter((m) => !m.read).length || 0);
+  const activePreset = useSettingsStore((s) => s.activePreset);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const applyPreset = useSettingsStore((s) => s.applyPreset);
+  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
 
   const mainNavItems = [
     { to: "/app", label: "Overview", icon: ChartLineUp, end: true },
@@ -125,17 +130,45 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "", onItemClick })
         </div>
       </div>
 
-      <div className="pt-4 border-t border-hairline flex items-center justify-between px-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-accent-soft text-accent text-xs font-semibold flex items-center justify-center shrink-0">
-            AD
+      <div className="pt-3 border-t border-hairline space-y-2.5">
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Palette size={14} className="text-accent shrink-0" />
+            <span className="text-[11px] font-medium text-text-secondary truncate">
+              {activePreset === "minima-beige" ? "Minima Beige" : activePreset}
+            </span>
           </div>
-          <div className="min-w-0">
-            <div className="text-xs font-medium text-text-primary truncate">
-              Admin
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => applyPreset(activePreset === "minima-beige" ? "graphite" : "minima-beige")}
+              className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-canvas hover:bg-hairline/40 border border-hairline text-text-secondary transition-colors"
+              title="Toggle between Minima Beige and Graphite"
+            >
+              {activePreset === "minima-beige" ? "Default" : "Beige"}
+            </button>
+            <button
+              onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
+              className="w-6 h-6 rounded-full hover:bg-canvas text-text-secondary flex items-center justify-center text-xs transition-colors"
+              title="Toggle dark/light mode"
+              aria-label="Toggle dark/light mode"
+            >
+              {themeMode === "dark" ? "🌙" : "☀️"}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-accent-soft text-accent text-xs font-semibold flex items-center justify-center shrink-0">
+              AD
             </div>
-            <div className="text-[10px] text-text-tertiary truncate">
-              Finance & Sales
+            <div className="min-w-0">
+              <div className="text-xs font-medium text-text-primary truncate">
+                Admin
+              </div>
+              <div className="text-[10px] text-text-tertiary truncate">
+                Finance & Sales
+              </div>
             </div>
           </div>
         </div>

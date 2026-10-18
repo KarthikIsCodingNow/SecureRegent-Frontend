@@ -3,6 +3,7 @@ import { CaretUp, CaretDown, Minus } from "@phosphor-icons/react";
 import clsx from "clsx";
 import { DeltaResult } from "../../utils/formatters";
 import { AnalogRollingCounter } from "./AnalogRollingCounter";
+import { TiltElement } from "./TiltElement";
 
 interface KpiCardProps {
   label: string;
@@ -42,19 +43,23 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   const displayString = formattedValue !== undefined ? formattedValue : String(value);
 
   return (
-    <div
+    <TiltElement
+      maxTilt={9}
+      scale={onClick ? 1.02 : 1.0}
+      elevation={10}
+      onLongPress={onClick}
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
-      onKeyDown={(e) => {
+      onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
         if (onClick && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
           onClick();
         }
       }}
       className={clsx(
-        "bg-card rounded-card p-4 sm:p-5 shadow-card transition-all duration-200 flex flex-col justify-between relative overflow-hidden",
-        onClick && "cursor-pointer hover:-translate-y-0.5 hover:shadow-flyout",
+        "bg-card rounded-card p-4 sm:p-5 shadow-card transition-colors flex flex-col justify-between relative overflow-hidden",
+        onClick && "cursor-pointer",
         className
       )}
     >
@@ -118,6 +123,6 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           </svg>
         </div>
       </div>
-    </div>
+    </TiltElement>
   );
 };

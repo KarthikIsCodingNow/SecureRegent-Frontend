@@ -111,3 +111,38 @@ body {
     width: 100% !important;
   }
 }
+
+/* 3D Perspective & Dimensional Tilt Tipping */
+.perspective-container {
+  perspective: 900px;
+}
+
+.tilt-balance {
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.45s ease-out;
+  will-change: transform, box-shadow;
+}
+
+.tilt-balance:active {
+  transform: perspective(700px) scale(0.97) translateZ(0);
+}
+
+/* Dimensional Pop Up Hover */
+.popup-hover {
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease-out;
+}
+
+.popup-hover:hover {
+  transform: translateY(-3px) scale(1.018);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Mobile Touch & Hold ripple elevation */
+.touch-elevate {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease-out;
+}
+
+.touch-elevate:active {
+  transform: scale(0.97);
+}
+

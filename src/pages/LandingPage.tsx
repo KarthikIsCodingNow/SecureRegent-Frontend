@@ -1,29 +1,120 @@
-import React from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ChartLineUp, UsersThree, FileText, Handshake, ListChecks } from "@phosphor-icons/react";
-import { useSettingsStore } from "../store/settingsStore";
+import {
+  ArrowRight,
+  ChartLineUp,
+  UsersThree,
+  FileText,
+  Handshake,
+  ListChecks,
+  List,
+  X,
+  Palette,
+  Check
+} from "@phosphor-icons/react";
+import { useSettingsStore, ThemePreset } from "../store/settingsStore";
 import { useDataStore } from "../store/dataStore";
 import { formatCurrency, formatNumber } from "../utils/formatters";
 import { BrandLogo } from "../components/common/BrandLogo";
 import { LandingFooter } from "../components/common/SiteFooter";
 import { AnalogRollingCounter } from "../components/common/AnalogRollingCounter";
+import { TiltElement } from "../components/common/TiltElement";
 
 export const LandingPage: React.FC = () => {
   const landing = useSettingsStore((s) => s.landing);
+  const activePreset = useSettingsStore((s) => s.activePreset);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const applyPreset = useSettingsStore((s) => s.applyPreset);
+  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
   const { dataset } = useDataStore();
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
+
+  // Dynamic light source tracking state
+  const heroRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const [lightPos, setLightPos] = useState({ x: 50, y: 38, active: false });
+  const [titleAngle, setTitleAngle] = useState(0);
+  const [titleProximity, setTitleProximity] = useState(0);
+  const [titleOffset, setTitleOffset] = useState({ dx: 0, dy: 0 });
 
   const totalLeads = dataset.leads.length;
   const totalRevenue = dataset.deals.reduce((sum, d) => sum + d.value, 0);
   const totalQuotes = dataset.quotations.length;
   const totalOrders = dataset.orders.length;
 
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const el = heroRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setLightPos({ x, y, active: true });
+
+    if (titleRef.current) {
+      const tRect = titleRef.current.getBoundingClientRect();
+      const titleCenterX = tRect.left + tRect.width / 2;
+      const titleCenterY = tRect.top + tRect.height / 2;
+      const dx = e.clientX - titleCenterX;
+      const dy = e.clientY - titleCenterY;
+      const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      const dist = Math.hypot(dx, dy);
+      const prox = Math.max(0, Math.min(1, 1 - dist / 800));
+
+      setTitleAngle(angle);
+      setTitleProximity(prox);
+      setTitleOffset({ dx, dy });
+    }
+  }, []);
+
+  const handlePointerLeave = useCallback(() => {
+    setLightPos({ x: 50, y: 38, active: false });
+    setTitleAngle(0);
+    setTitleProximity(0);
+    setTitleOffset({ dx: 0, dy: 0 });
+  }, []);
+
+  // Ambient gentle pulse when idle
+  useEffect(() => {
+    let frameId: number;
+    let time = 0;
+    const animateIdle = () => {
+      if (!lightPos.active) {
+        time += 0.015;
+        const idleX = 50 + Math.sin(time) * 12;
+        const idleY = 38 + Math.cos(time * 0.8) * 8;
+        setLightPos((prev) => (prev.active ? prev : { x: idleX, y: idleY, active: false }));
+      }
+      frameId = requestAnimationFrame(animateIdle);
+    };
+    frameId = requestAnimationFrame(animateIdle);
+    return () => cancelAnimationFrame(frameId);
+  }, [lightPos.active]);
+
   const gradientStyle: React.CSSProperties = {
     backgroundColor: landing.stop1,
     backgroundImage: `
-      radial-gradient(circle at 10% 45%, ${landing.stop2} 0%, transparent 55%),
-      radial-gradient(circle at 90% 50%, ${landing.stop3} 0%, transparent 60%),
-      radial-gradient(circle at 85% 15%, ${landing.stop4} 0%, transparent 45%)
-    `
+      radial-gradient(circle 680px at ${lightPos.x}% ${lightPos.y}%, rgba(255, 255, 255, 0.44) 0%, rgba(255, 255, 255, 0.16) 28%, rgba(255, 255, 255, 0.04) 52%, transparent 74%),
+      radial-gradient(circle 850px at ${lightPos.x}% ${lightPos.y}%, ${landing.stop2} 0%, transparent 68%),
+      radial-gradient(circle 950px at ${100 - lightPos.x * 0.35}% ${100 - lightPos.y * 0.35}%, ${landing.stop3} 0%, transparent 62%),
+      radial-gradient(circle 600px at ${85 - (lightPos.x - 50) * 0.2}% ${15 - (lightPos.y - 50) * 0.2}%, ${landing.stop4} 0%, transparent 50%)
+    `,
+    transition: lightPos.active ? "none" : "background-image 0.6s ease-out"
+  };
+
+  const isMinimaBeige = activePreset === "minima-beige";
+  const reactiveTitleStyle: React.CSSProperties = {
+    background: isMinimaBeige
+      ? `linear-gradient(${titleAngle + 90}deg, #FFFFFF 0%, #FAF0E6 24%, #EED9C4 50%, #D9B99B 74%, #8E5630 100%)`
+      : `linear-gradient(${titleAngle + 90}deg, #FFFFFF 0%, rgba(255, 255, 255, ${(0.92 + titleProximity * 0.08).toFixed(2)}) 32%, rgba(238, 217, 196, ${(0.82 + titleProximity * 0.18).toFixed(2)}) 65%, rgba(185, 199, 211, 0.85) 100%)`,
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    filter: `drop-shadow(${(-titleOffset.dx * 0.02).toFixed(1)}px ${(-titleOffset.dy * 0.02 + 4).toFixed(1)}px ${(4 + titleProximity * 6).toFixed(1)}px rgba(0, 0, 0, ${(0.15 + titleProximity * 0.1).toFixed(2)}))`,
+    transform: `perspective(900px) rotateX(${(titleOffset.dy * 0.012).toFixed(2)}deg) rotateY(${(-titleOffset.dx * 0.012).toFixed(2)}deg) scale(${(1 + titleProximity * 0.02).toFixed(3)})`,
+    transition: lightPos.active ? "transform 0.08s ease-out, filter 0.1s ease-out" : "transform 0.5s ease-out, filter 0.5s ease-out",
+    willChange: "transform, filter"
   };
 
   const capabilities = [
@@ -57,12 +148,54 @@ export const LandingPage: React.FC = () => {
     }
   ];
 
+  const presetsList: { id: ThemePreset; label: string; swatches: string[] }[] = [
+    {
+      id: "minima-beige",
+      label: "Minima Beige (Pastel)",
+      swatches: ["#FAF0E6", "#FFF0DB", "#EED9C4", "#E4D5B7", "#D9B99B"]
+    },
+    {
+      id: "graphite",
+      label: "Graphite Blue (Default)",
+      swatches: ["#3E6AE1", "#E8EEFC", "#171A20", "#5C5E62"]
+    },
+    {
+      id: "forest",
+      label: "Forest Green",
+      swatches: ["#267E54", "#E6F4ED", "#171A20", "#3DB87E"]
+    },
+    {
+      id: "sand",
+      label: "Sandstone Earth",
+      swatches: ["#A67C46", "#F8F3EC", "#D4A567", "#362A1B"]
+    },
+    {
+      id: "mono",
+      label: "Mono Slate",
+      swatches: ["#2D3139", "#EBECEE", "#171A20", "#D2D6DC"]
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-canvas text-text-primary selection:bg-accent selection:text-white">
+    <div className="min-h-screen bg-canvas text-text-primary selection:bg-accent selection:text-white transition-colors duration-300">
       <section
+        ref={heroRef}
         style={gradientStyle}
-        className="relative min-h-screen flex flex-col justify-between p-6 sm:p-10 overflow-hidden"
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+        className="relative min-h-screen flex flex-col justify-between p-4 sm:p-8 md:p-10 overflow-hidden cursor-crosshair touch-manipulation"
       >
+        {/* Dynamic luminous cursor aura light beam */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute w-[460px] h-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[80px] bg-white/20 mix-blend-soft-light transition-opacity duration-300"
+          style={{
+            left: `${lightPos.x}%`,
+            top: `${lightPos.y}%`,
+            opacity: lightPos.active ? 0.9 : 0.4
+          }}
+        />
+
         {landing.noiseEnabled && (
           <div
             className="absolute inset-0 pointer-events-none opacity-[0.045] mix-blend-overlay"
@@ -72,78 +205,296 @@ export const LandingPage: React.FC = () => {
           />
         )}
 
-        <header className="relative z-10 flex items-center justify-between max-w-7xl mx-auto w-full">
-          <div className="flex items-center gap-2.5">
-            <BrandLogo size={28} />
-            <span className="font-display font-semibold text-xs tracking-[0.25em] uppercase text-text-primary">
-              {landing.productName}
-            </span>
+        {/* Blushéra Inspired Frosted Glassmorphism Header */}
+        <header className="relative z-30 max-w-7xl mx-auto w-full pt-2">
+          <div className="bg-card/75 backdrop-blur-xl border border-hairline/80 rounded-full px-4 sm:px-6 py-2.5 sm:py-3 shadow-lg flex items-center justify-between transition-all">
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <BrandLogo size={28} className="transition-transform group-hover:scale-105" />
+              <span className="font-display font-semibold text-xs tracking-[0.25em] uppercase text-text-primary">
+                {landing.productName}
+              </span>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-7">
+              <Link
+                to="/app"
+                className="text-xs font-medium text-text-primary/80 hover:text-text-primary transition-colors hover:scale-105"
+              >
+                Features
+              </Link>
+              <Link
+                to="/app/leads"
+                className="text-xs font-medium text-text-primary/80 hover:text-text-primary transition-colors hover:scale-105"
+              >
+                Telemetry
+              </Link>
+              <Link
+                to="/app/deals"
+                className="text-xs font-medium text-text-primary/80 hover:text-text-primary transition-colors hover:scale-105"
+              >
+                Revenue
+              </Link>
+              <Link
+                to="/app/admin"
+                className="text-xs font-medium text-text-primary/80 hover:text-text-primary transition-colors hover:scale-105"
+              >
+                Admin
+              </Link>
+
+              {/* Theme preset selector pill */}
+              <div className="relative">
+                <button
+                  onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-canvas/80 text-text-secondary hover:text-text-primary border border-hairline text-xs font-medium transition-all"
+                  aria-label="Change theme preset"
+                >
+                  <Palette size={14} className="text-accent" />
+                  <span className="capitalize">{activePreset === "minima-beige" ? "Minima Beige" : activePreset}</span>
+                </button>
+
+                {themeDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-card rounded-2xl shadow-2xl border border-hairline p-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider px-2 py-1">
+                      Theme Palettes
+                    </div>
+                    <div className="space-y-1">
+                      {presetsList.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            applyPreset(p.id);
+                            setThemeDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-colors text-left ${
+                            activePreset === p.id ? "bg-accent-soft text-accent font-semibold" : "hover:bg-canvas text-text-primary"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="flex -space-x-1">
+                              {p.swatches.slice(0, 3).map((sw, idx) => (
+                                <span
+                                  key={idx}
+                                  className="w-3.5 h-3.5 rounded-full border border-card shadow-sm"
+                                  style={{ backgroundColor: sw }}
+                                />
+                              ))}
+                            </div>
+                            <span className="truncate">{p.label.split(" ")[0]}</span>
+                          </div>
+                          {activePreset === p.id && <Check size={14} weight="bold" className="shrink-0 text-accent" />}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="pt-2 mt-2 border-t border-hairline flex items-center justify-between px-2">
+                      <span className="text-[11px] text-text-secondary">Dark Mode</span>
+                      <button
+                        onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
+                        className="px-2.5 py-1 rounded-full text-[11px] bg-canvas border border-hairline hover:bg-hairline/30 transition-all font-medium"
+                      >
+                        {themeMode === "dark" ? "Dark" : "Light"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </nav>
+
+            {/* Desktop Actions */}
+            <div className="hidden md:flex items-center gap-3">
+              <TiltElement
+                as={Link}
+                to="/app"
+                maxTilt={16}
+                elevation={10}
+                className="px-5 py-2 rounded-full bg-text-primary text-card text-xs font-medium hover:opacity-95 shadow-md flex items-center gap-2"
+              >
+                <span>{landing.ctaLabel}</span>
+                <ArrowRight size={14} weight="bold" />
+              </TiltElement>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="flex md:hidden items-center gap-2">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-full bg-canvas/80 text-text-primary border border-hairline hover:bg-canvas transition-colors"
+                aria-label="Toggle navigation menu"
+              >
+                {mobileMenuOpen ? <X size={18} /> : <List size={18} />}
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <Link
-              to="/app"
-              className="text-xs font-medium text-text-primary/80 hover:text-text-primary transition-colors hidden sm:inline-block"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/app/admin"
-              className="text-xs font-medium text-text-primary/80 hover:text-text-primary transition-colors hidden sm:inline-block"
-            >
-              Admin
-            </Link>
-            <Link
-              to="/app"
-              className="px-5 py-2 rounded-full bg-text-primary text-card text-xs font-medium hover:opacity-90 shadow-sm transition-all"
-            >
-              {landing.ctaLabel}
-            </Link>
-          </div>
+          {/* Mobile Dropdown Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-2 bg-card/95 backdrop-blur-2xl border border-hairline rounded-3xl p-5 shadow-2xl space-y-4 animate-in slide-in-from-top-4 duration-200">
+              <div className="grid grid-cols-2 gap-2 text-xs font-medium text-text-primary">
+                <Link
+                  to="/app"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-3 rounded-2xl bg-canvas/60 hover:bg-canvas transition-colors flex items-center gap-2"
+                >
+                  <ChartLineUp size={16} className="text-accent" />
+                  <span>Overview</span>
+                </Link>
+                <Link
+                  to="/app/leads"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-3 rounded-2xl bg-canvas/60 hover:bg-canvas transition-colors flex items-center gap-2"
+                >
+                  <UsersThree size={16} className="text-accent" />
+                  <span>Leads</span>
+                </Link>
+                <Link
+                  to="/app/quotations"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-3 rounded-2xl bg-canvas/60 hover:bg-canvas transition-colors flex items-center gap-2"
+                >
+                  <FileText size={16} className="text-accent" />
+                  <span>Quotations</span>
+                </Link>
+                <Link
+                  to="/app/deals"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-3 rounded-2xl bg-canvas/60 hover:bg-canvas transition-colors flex items-center gap-2"
+                >
+                  <Handshake size={16} className="text-accent" />
+                  <span>Deals</span>
+                </Link>
+                <Link
+                  to="/app/orders"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-3 rounded-2xl bg-canvas/60 hover:bg-canvas transition-colors flex items-center gap-2"
+                >
+                  <ListChecks size={16} className="text-accent" />
+                  <span>Orders</span>
+                </Link>
+                <Link
+                  to="/app/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-3 rounded-2xl bg-canvas/60 hover:bg-canvas transition-colors flex items-center gap-2"
+                >
+                  <Palette size={16} className="text-accent" />
+                  <span>Admin</span>
+                </Link>
+              </div>
+
+              {/* Mobile Theme Preset Switcher */}
+              <div className="pt-2 border-t border-hairline">
+                <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider block mb-2">
+                  Theme Palette
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {presetsList.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => applyPreset(p.id)}
+                      className={`flex items-center gap-2 p-2 rounded-xl text-xs font-medium border text-left transition-all ${
+                        activePreset === p.id
+                          ? "bg-accent-soft border-accent text-accent"
+                          : "border-hairline bg-canvas/50 text-text-secondary"
+                      }`}
+                    >
+                      <div className="flex -space-x-1 shrink-0">
+                        {p.swatches.slice(0, 3).map((sw, idx) => (
+                          <span
+                            key={idx}
+                            className="w-3 h-3 rounded-full border border-card shadow-sm"
+                            style={{ backgroundColor: sw }}
+                          />
+                        ))}
+                      </div>
+                      <span className="truncate">{p.label.split(" ")[0]}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-xs text-text-secondary">Appearance Mode</span>
+                  <button
+                    onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
+                    className="px-3 py-1.5 rounded-full text-xs bg-canvas border border-hairline font-medium"
+                  >
+                    {themeMode === "dark" ? "🌙 Dark" : "☀️ Light"}
+                  </button>
+                </div>
+              </div>
+
+              <TiltElement
+                as={Link}
+                to="/app"
+                onClick={() => setMobileMenuOpen(false)}
+                maxTilt={16}
+                elevation={12}
+                className="w-full py-3.5 rounded-full bg-text-primary text-card text-center text-sm font-medium shadow-lg flex items-center justify-center gap-2"
+              >
+                <span>{landing.ctaLabel}</span>
+                <ArrowRight size={15} weight="bold" />
+              </TiltElement>
+            </div>
+          )}
         </header>
 
-        <div className="relative z-10 max-w-4xl mx-auto w-full text-center py-16 sm:py-24 my-auto">
-          <div className="inline-flex items-center justify-center gap-4 mb-6">
-            <BrandLogo size={52} className="shadow-lg rounded-2xl" />
-            <h1 className="text-white text-5xl sm:text-7xl font-display font-semibold tracking-tight">
+        {/* Hero Content with Reactive Title and Light Response */}
+        <div className="relative z-10 max-w-5xl mx-auto w-full text-center py-14 sm:py-20 my-auto select-none">
+          <div className="inline-flex items-center justify-center gap-3 sm:gap-4 mb-6">
+            <BrandLogo size={52} className="shadow-2xl rounded-2xl transition-transform hover:scale-105" />
+            <h1
+              ref={titleRef}
+              style={reactiveTitleStyle}
+              className="text-4xl sm:text-6xl md:text-8xl font-display font-bold tracking-tight uppercase transition-all duration-75 cursor-default drop-shadow-sm"
+            >
               {landing.productName}
             </h1>
           </div>
 
-          <p className="text-text-primary text-2xl sm:text-4xl font-display font-medium tracking-tight mb-4 max-w-2xl mx-auto">
+          <p className="text-text-primary text-xl sm:text-3xl md:text-4xl font-display font-medium tracking-tight mb-4 max-w-3xl mx-auto drop-shadow-sm">
             {landing.heroStatement}
           </p>
 
-          <p className="text-text-primary/80 text-base sm:text-lg max-w-xl mx-auto mb-8 font-normal leading-relaxed">
+          <p className="text-text-primary/80 text-sm sm:text-base md:text-lg max-w-2xl mx-auto mb-8 font-normal leading-relaxed">
             {landing.heroSubline}
           </p>
 
+          {/* Interactive CTAs with Dimensional 3D Tilt & Losing Balance Physics */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
+            <TiltElement
+              as={Link}
               to="/app"
-              className="px-7 py-3.5 rounded-full bg-text-primary text-card text-sm font-medium hover:opacity-90 transition-transform hover:-translate-y-0.5 shadow-md flex items-center gap-2"
+              maxTilt={18}
+              elevation={14}
+              scale={1.04}
+              className="px-8 py-4 rounded-full bg-text-primary text-card text-sm sm:text-base font-medium shadow-xl flex items-center gap-2.5 transition-all"
             >
               <span>{landing.ctaLabel}</span>
-              <ArrowRight size={15} weight="bold" />
-            </Link>
-            <Link
+              <ArrowRight size={16} weight="bold" />
+            </TiltElement>
+
+            <TiltElement
+              as={Link}
               to="/app/admin"
-              className="text-xs font-medium text-text-primary/75 hover:text-text-primary transition-colors py-2 px-3"
+              maxTilt={14}
+              elevation={8}
+              className="text-xs sm:text-sm font-medium text-text-primary/80 hover:text-text-primary transition-colors py-2.5 px-4 rounded-full bg-card/40 backdrop-blur-md border border-hairline/60"
             >
-              Explore the admin console
-            </Link>
+              Explore admin console & presets
+            </TiltElement>
           </div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto w-full flex items-center justify-between text-xs text-text-primary/60 pt-6">
+        <div className="relative z-10 max-w-7xl mx-auto w-full flex items-center justify-between text-xs text-text-primary/70 pt-6">
           <span>Enterprise edition for Indian professional services</span>
-          <span>Zero external dependencies</span>
+          <span>Zero external dependencies • Deterministic CRM</span>
         </div>
       </section>
 
+      {/* Main Showcase Section */}
       <section className="relative -mt-20 pt-20 pb-28 px-4 sm:px-8 max-w-7xl mx-auto">
         <div className="relative mx-auto w-full max-w-6xl mb-24 overflow-hidden py-10">
           <div className="flex items-center justify-center relative min-h-[460px] sm:min-h-[580px]">
+            {/* Left Decorative Angled Card */}
             <div className="hidden lg:block absolute left-[-60px] top-12 w-[480px] bg-card rounded-[32px] p-6 shadow-2xl border border-hairline/80 opacity-40 -rotate-3 scale-90 pointer-events-none select-none">
               <div className="h-4 w-28 bg-hairline rounded-full mb-6" />
               <div className="grid grid-cols-2 gap-3 mb-6">
@@ -153,7 +504,13 @@ export const LandingPage: React.FC = () => {
               <div className="bg-canvas p-4 rounded-card h-52" />
             </div>
 
-            <div className="relative z-20 w-full max-w-4xl bg-card rounded-[32px] p-6 sm:p-8 shadow-2xl border border-hairline/60">
+            {/* Central Interactive Tilt Card with Losing Balance Physics */}
+            <TiltElement
+              maxTilt={7}
+              elevation={16}
+              scale={1.01}
+              className="relative z-20 w-full max-w-4xl bg-card rounded-[32px] p-6 sm:p-8 shadow-2xl border border-hairline/70"
+            >
               <div className="flex items-center justify-between pb-6 mb-6 border-b border-hairline">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-accent-soft text-accent flex items-center justify-center font-bold text-xs">
@@ -211,15 +568,16 @@ export const LandingPage: React.FC = () => {
                   {[35, 45, 60, 52, 70, 65, 80, 75, 90, 85, 95, 100].map((h, i) => (
                     <div key={i} className="flex-1 bg-hairline/50 rounded-full h-full flex items-end">
                       <div
-                        className="w-full bg-accent rounded-full transition-all"
+                        className="w-full bg-accent rounded-full transition-all duration-300 hover:brightness-110"
                         style={{ height: `${h}%` }}
                       />
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
+            </TiltElement>
 
+            {/* Right Decorative Angled Card */}
             <div className="hidden lg:block absolute right-[-60px] top-12 w-[480px] bg-card rounded-[32px] p-6 shadow-2xl border border-hairline/80 opacity-40 rotate-3 scale-90 pointer-events-none select-none">
               <div className="h-4 w-28 bg-hairline rounded-full mb-6" />
               <div className="space-y-3 mb-6">
@@ -232,6 +590,7 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Full Lifecycle Operations Cards with 3D Tilt */}
         <div className="mb-24">
           <div className="text-center max-w-xl mx-auto mb-14">
             <h2 className="text-2xl sm:text-3xl font-display font-medium text-text-primary mb-3">
@@ -244,9 +603,12 @@ export const LandingPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {capabilities.map((cap) => (
-              <div
+              <TiltElement
                 key={cap.title}
-                className="bg-card rounded-card p-6 shadow-card hover:shadow-flyout transition-all flex flex-col justify-between border border-hairline/40"
+                maxTilt={14}
+                elevation={12}
+                scale={1.025}
+                className="bg-card rounded-card p-6 shadow-card hover:shadow-flyout flex flex-col justify-between border border-hairline/40 transition-colors"
               >
                 <div>
                   <div className="w-10 h-10 rounded-full bg-accent-soft text-accent flex items-center justify-center mb-5">
@@ -278,32 +640,35 @@ export const LandingPage: React.FC = () => {
                     </svg>
                   </div>
                 </div>
-              </div>
+              </TiltElement>
             ))}
           </div>
         </div>
 
+        {/* Live Analytics CTA Banner */}
         <div
           style={gradientStyle}
-          className="rounded-[32px] p-8 sm:p-14 text-center text-text-primary relative overflow-hidden shadow-lg"
+          className="rounded-[32px] p-8 sm:p-14 text-center text-text-primary relative overflow-hidden shadow-xl"
         >
           <div className="relative z-10 max-w-xl mx-auto">
-            <h2 className="text-2xl sm:text-4xl font-display font-medium tracking-tight mb-4">
+            <h2 className="text-2xl sm:text-4xl font-display font-medium tracking-tight mb-4 drop-shadow-sm">
               Explore live business analytics
             </h2>
             <p className="text-sm text-text-primary/80 mb-8 leading-relaxed">
               Fully interactive dashboard with deterministic CRM data simulation, cohort tracking and instant theme adjustments.
             </p>
-            <Link
+            <TiltElement
+              as={Link}
               to="/app"
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-text-primary text-card text-sm font-medium hover:opacity-90 transition-all shadow-md"
+              maxTilt={16}
+              elevation={12}
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-text-primary text-card text-sm font-medium hover:opacity-90 transition-all shadow-lg"
             >
               <span>{landing.ctaLabel}</span>
               <ArrowRight size={15} weight="bold" />
-            </Link>
+            </TiltElement>
           </div>
         </div>
-
       </section>
 
       <LandingFooter />

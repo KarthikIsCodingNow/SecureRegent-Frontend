@@ -334,17 +334,17 @@ export const AdminPage: React.FC = () => {
               <div className="space-y-3">
                 <label className="text-xs font-medium text-text-secondary block">Curated preset palettes</label>
                 <div className="flex flex-wrap items-center gap-2">
-                  {(["graphite", "signal", "forest", "sand", "mono"] as ThemePreset[]).map((p) => (
+                  {(["graphite", "minima-beige", "signal", "forest", "sand", "mono"] as ThemePreset[]).map((p) => (
                     <button
                       key={p}
                       onClick={() => settings.applyPreset(p)}
                       className={`px-3.5 py-1.5 rounded-full text-xs font-medium capitalize border transition-all ${
                         settings.activePreset === p
-                          ? "bg-text-primary text-card border-text-primary"
+                          ? "bg-text-primary text-card border-text-primary shadow-sm"
                           : "border-hairline text-text-secondary hover:bg-canvas"
                       }`}
                     >
-                      {p === "graphite" ? "Graphite Blue (Default)" : p}
+                      {p === "graphite" ? "Graphite Blue (Default)" : p === "minima-beige" ? "Minima Beige (Pastel)" : p}
                     </button>
                   ))}
                 </div>

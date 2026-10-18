@@ -4,7 +4,7 @@ import { DEFAULT_SIMULATOR_CONFIG, SimulatorConfig } from "../domain/generator";
 import { isProhibitedHue, getContrastTextColor } from "../utils/colors";
 
 export type ThemeMode = "light" | "dark" | "system";
-export type ThemePreset = "graphite" | "signal" | "forest" | "sand" | "mono";
+export type ThemePreset = "graphite" | "signal" | "forest" | "sand" | "mono" | "minima-beige";
 
 export interface ColorTokens {
   accent: string;
@@ -166,26 +166,60 @@ const DEFAULT_DARK_COLORS: ColorTokens = {
   warning: "#F5A524"
 };
 
-const PRESETS: Record<ThemePreset, { light: Partial<ColorTokens>; dark: Partial<ColorTokens> }> = {
+const PRESETS: Record<ThemePreset, { light: Partial<ColorTokens>; dark: Partial<ColorTokens>; landing?: Partial<LandingSettings> }> = {
   graphite: {
-    light: { accent: "#3E6AE1", accentSoft: "#E8EEFC" },
-    dark: { accent: "#5B83F0", accentSoft: "#1E2942" }
+    light: { ...DEFAULT_LIGHT_COLORS, accent: "#3E6AE1", accentSoft: "#E8EEFC" },
+    dark: { ...DEFAULT_DARK_COLORS, accent: "#5B83F0", accentSoft: "#1E2942" }
   },
   signal: {
-    light: { accent: "#D9383A", accentSoft: "#FCEBEB" },
-    dark: { accent: "#F25557", accentSoft: "#381B1C" }
+    light: { ...DEFAULT_LIGHT_COLORS, accent: "#D9383A", accentSoft: "#FCEBEB" },
+    dark: { ...DEFAULT_DARK_COLORS, accent: "#F25557", accentSoft: "#381B1C" }
   },
   forest: {
-    light: { accent: "#267E54", accentSoft: "#E6F4ED" },
-    dark: { accent: "#3DB87E", accentSoft: "#163324" }
+    light: { ...DEFAULT_LIGHT_COLORS, accent: "#267E54", accentSoft: "#E6F4ED" },
+    dark: { ...DEFAULT_DARK_COLORS, accent: "#3DB87E", accentSoft: "#163324" }
   },
   sand: {
-    light: { accent: "#A67C46", accentSoft: "#F8F3EC" },
-    dark: { accent: "#D4A567", accentSoft: "#362A1B" }
+    light: { ...DEFAULT_LIGHT_COLORS, accent: "#A67C46", accentSoft: "#F8F3EC" },
+    dark: { ...DEFAULT_DARK_COLORS, accent: "#D4A567", accentSoft: "#362A1B" }
   },
   mono: {
-    light: { accent: "#2D3139", accentSoft: "#EBECEE" },
-    dark: { accent: "#D2D6DC", accentSoft: "#252930" }
+    light: { ...DEFAULT_LIGHT_COLORS, accent: "#2D3139", accentSoft: "#EBECEE" },
+    dark: { ...DEFAULT_DARK_COLORS, accent: "#D2D6DC", accentSoft: "#252930" }
+  },
+  "minima-beige": {
+    light: {
+      canvas: "#FAF0E6",       // Cream Off-White
+      card: "#FFF0DB",         // Light Beige
+      sidebar: "#FAF0E6",      // Cream Off-White
+      hairline: "#EED9C4",     // Sandstone
+      accent: "#9E6238",       // Warm Terracotta Clay
+      accentSoft: "#E4D5B7",   // Warm Tan
+      textPrimary: "#2D231A",  // Deep Espresso brown
+      textSecondary: "#7A6453", // Muted clay brown
+      positive: "#3E8A5E",
+      negative: "#C7483B",
+      warning: "#C97A1E"
+    },
+    dark: {
+      canvas: "#1B1613",
+      card: "#251E19",
+      sidebar: "#1F1915",
+      hairline: "#3D3228",
+      accent: "#D9B99B",       // Muted Clay
+      accentSoft: "#352920",
+      textPrimary: "#FAF0E6",  // Cream Off-White
+      textSecondary: "#D4C2B2", // Light Sandstone
+      positive: "#52B788",
+      negative: "#EF6B5E",
+      warning: "#F5B041"
+    },
+    landing: {
+      stop1: "#FAF0E6",
+      stop2: "#FFF0DB",
+      stop3: "#EED9C4",
+      stop4: "#D9B99B"
+    }
   }
 };
 
@@ -479,7 +513,15 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set((state) => ({
       activePreset: preset,
       lightColors: { ...state.lightColors, ...config.light },
-      darkColors: { ...state.darkColors, ...config.dark }
+      darkColors: { ...state.darkColors, ...config.dark },
+      landing: config.landing ? { ...state.landing, ...config.landing } : state.landing,
+      charts: preset === "minima-beige" ? {
+        ...state.charts,
+        palette: ["#9E6238", "#D9B99B", "#C97A1E", "#7A6453", "#3E8A5E", "#E4D5B7", "#8C6A50", "#5C7C8A"]
+      } : (preset === "graphite" ? {
+        ...state.charts,
+        palette: [...DEFAULT_CHART_PALETTE]
+      } : state.charts)
     }));
     const s = get();
     applyCssTokensToDom(s);

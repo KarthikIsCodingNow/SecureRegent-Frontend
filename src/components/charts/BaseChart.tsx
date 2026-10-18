@@ -17,6 +17,95 @@ export interface BaseChartProps {
   onChartClick?: (params: ChartClickParams) => void;
 }
 
+function enhanceSeriesPopups(opt: EChartsOption): EChartsOption {
+  if (!opt || !opt.series) return opt;
+  const seriesRaw = Array.isArray(opt.series) ? opt.series : [opt.series];
+
+  const enhancedSeries = seriesRaw.map((s: any) => {
+    if (!s || typeof s !== "object") return s;
+    const type = s.type || "line";
+    const existingEmphasis = s.emphasis || {};
+
+    if (type === "line") {
+      return {
+        ...s,
+        showSymbol: true,
+        symbol: s.symbol || "circle",
+        symbolSize: s.symbolSize || 7,
+        emphasis: {
+          focus: "series",
+          scale: 2.6,
+          itemStyle: {
+            shadowBlur: 22,
+            shadowColor: "rgba(0, 0, 0, 0.5)",
+            borderWidth: 3.5,
+            borderColor: "#FFFFFF",
+            ...(existingEmphasis.itemStyle || {})
+          },
+          lineStyle: {
+            width: (s.lineStyle?.width || 2.5) + 1.2,
+            shadowBlur: 14,
+            shadowColor: "rgba(0, 0, 0, 0.25)",
+            ...(existingEmphasis.lineStyle || {})
+          },
+          ...existingEmphasis
+        }
+      };
+    }
+
+    if (type === "bar") {
+      return {
+        ...s,
+        emphasis: {
+          focus: "series",
+          itemStyle: {
+            shadowBlur: 26,
+            shadowOffsetY: -7,
+            shadowColor: "rgba(0, 0, 0, 0.38)",
+            borderRadius: Array.isArray(s.itemStyle?.borderRadius) ? s.itemStyle.borderRadius : [6, 6, 0, 0],
+            ...(existingEmphasis.itemStyle || {})
+          },
+          ...existingEmphasis
+        }
+      };
+    }
+
+    if (type === "pie") {
+      return {
+        ...s,
+        emphasis: {
+          scale: true,
+          scaleSize: 14,
+          itemStyle: {
+            shadowBlur: 28,
+            shadowColor: "rgba(0, 0, 0, 0.45)",
+            ...(existingEmphasis.itemStyle || {})
+          },
+          ...existingEmphasis
+        }
+      };
+    }
+
+    return {
+      ...s,
+      emphasis: {
+        focus: "series",
+        itemStyle: {
+          shadowBlur: 20,
+          shadowColor: "rgba(0, 0, 0, 0.3)",
+          ...(existingEmphasis.itemStyle || {})
+        },
+        ...existingEmphasis
+      }
+    };
+  });
+
+  return {
+    ...opt,
+    series: enhancedSeries
+  };
+}
+
 export const BaseChart: React.FC<BaseChartProps> = ({
   option,
   height = 320,
@@ -49,7 +138,8 @@ export const BaseChart: React.FC<BaseChartProps> = ({
     }
 
     const instance = chartInstanceRef.current;
-    instance.setOption(option, true);
+    const enhancedOption = enhanceSeriesPopups(option);
+    instance.setOption(enhancedOption, true);
 
     const resizeObserver = new ResizeObserver(() => {
       instance.resize();

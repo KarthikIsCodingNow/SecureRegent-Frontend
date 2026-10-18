@@ -66,9 +66,20 @@ export function getBaseEChartsOption(theme: ChartThemeConfig) {
       borderWidth: 1,
       borderRadius: 12,
       padding: 0,
+      axisPointer: {
+        type: "line",
+        lineStyle: {
+          color: theme.isDark ? "rgba(255, 255, 255, 0.22)" : "rgba(0, 0, 0, 0.14)",
+          width: 1.5,
+          type: "dashed"
+        },
+        shadowStyle: {
+          color: theme.isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)"
+        }
+      },
       extraCssText: theme.isDark
-        ? "box-shadow: 0 10px 28px rgba(0,0,0,0.4); color: #F4F5F6;"
-        : "box-shadow: 0 8px 24px rgba(16,24,40,0.08); color: #171A20;"
+        ? "box-shadow: 0 14px 32px rgba(0,0,0,0.5); color: #F4F5F6;"
+        : "box-shadow: 0 10px 28px rgba(16,24,40,0.12); color: #171A20;"
     },
     grid: {
       left: 12,
