@@ -15,11 +15,37 @@
 
 ---
 
-## 🌟 Executive Overview
+## 📌 Executive Summary of Frontend Capabilities
 
-**Secure-Regent** is an executive-grade business performance and revenue analytics dashboard engineered for corporate service enterprises (statutory compliance, corporate registrations, intellectual property, tax advisory, and accounting).
+**Secure-Regent** is an interactive, executive-grade revenue analytics and business performance dashboard engineered with React 18, TypeScript, TailwindCSS, and Apache ECharts. Built specifically for corporate and professional service enterprises (statutory compliance, corporate registrations, tax advisory, and IP legalities), it transforms raw commercial inquiries into actionable financial telemetry—tracking customer lifecycle velocity from initial inquiry capture all the way to realized cash deposits.
 
-It bridges commercial enquiry tracking with downstream revenue realization, providing seamless traceability from initial contact capture to paid invoice realization. The entire platform is backed by a deterministic in-memory CRM simulator, a hardware-accelerated design system, and an iOS-inspired fluid interaction engine.
+The frontend delivers a cohesive suite of commercial intelligence tools, interactive drill-downs, and administrative controls:
+
+- **Comprehensive 5-Module Analytics Suite**:
+  - **Lead Analytics & Funnel Velocity**: Tracks Total, Qualified, Converted, and Unqualified leads with period-over-period percentage delta indicators and micro-sparklines. Incorporates a 4-tier funnel drop-off gate (*Commercial Enquiries → Qualified → Converted to Deals → Drop-off*), stacked bar lifecycle status trends, and channel acquisition trends (*Google Ads, Website, Just Dial, Referrals, Social Media*).
+  - **Quotation Analytics & Proposal Realization**: Visualizes service proposal volume and pipeline value share, quote-to-deal conversion ring gauges, proposal outcome donuts (*Accepted, Pending, Rejected, Expired*), service-level audit matrices, and an expandable hierarchical lead-wise quotation history accordion.
+  - **Deals & Revenue Intelligence**: Features dual-axis service revenue charts (contract count columns paired with booked revenue lines), regulatory practice distribution (*Company Law, IP, Tax, Licenses*), daily booked vs. collected revenue curves, contract priority tiers (*High, Medium, Low*), and progressive deal stage gates (*Filing, Review, Delivery, Closed*).
+  - **Orders Fulfillment & Cash Collections**: Provides operational fulfillment tracking across delivery milestones, overdue order queues, capacity workload tables by operator, payment method splits (*UPI, NEFT/RTGS, Card, Cheque, Cash*), and searchable financial audit ledgers with invoice references.
+  - **Executive Overview & Target Tracker**: Serves as the central command center featuring dynamic monthly target achievement gauges (auto-scaling to active timeframes), sales team leaderboards, and real-time audit activity feeds.
+
+- **Dynamic Reactive Timeframe & Comparative Filtering**:
+  - Global temporal controls supporting **Today**, **Last 7 Days**, **Last 30 Days**, and **Custom Date Ranges** with automated calendar swap protection.
+  - Dual-period comparison engine automatically resolves preceding equivalent windows, calculating color-coded positive, negative, and neutral percentage changes across all metrics.
+  - Granular multi-dimensional slicing by department (*Sales vs. Operations*), team member, and regulatory service line, with instantaneous in-memory chart re-aggregation.
+
+- **iOS-Inspired Genie Fluid Expansion & Popped-Up Modals**:
+  - Clicking any metric card or chart node triggers an Apple-style **Genie transition animation** that physically expands out from the clicked element's viewport coordinates (`--origin-x`, `--origin-y`) with liquid spring physics.
+  - Modals feature **dual floating windows** (*Analytical Overview & Timeline Distribution* alongside *Searchable Records Ledger*).
+  - Engineered with almost opaque, solid card surfaces and multi-tier `.shadow-popped-modal` elevation over a frosted `backdrop-filter: blur(20px) saturate(160%)` backdrop, eliminating translucent text bleed.
+
+- **Deep Relational Traceability & Drill-Downs**:
+  - Models realistic 1-to-many enterprise relationships (*1 Lead → Multiple Quotes & Deals; 1 Deal → Multiple Fulfillment Orders & Installment Payments*).
+  - Dedicated dossier pages (`/app/leads/:id`, `/app/deals/:id`, `/app/orders/:id`) provide complete bidirectional audit trails, breadcrumbs, and deep links.
+
+- **Extensive Administrative Customizer & Simulation Controls**:
+  - Full theme engine with 6 curated presets (including luxury pastel `minima-beige`), live token color pickers, corner radius sliders (0–28px), density modes, font pairings, and custom logo upload.
+  - Complete ECharts tuning: Cartesian grid toggles, data labels, curve smoothing, animation duration sliders, and Indian currency formatting (`₹`, Lakhs, Crores).
+  - Built-in deterministic CRM data simulator with customizable random seeds, history length, conversion rates, and instant dataset regeneration.
 
 ---
 
