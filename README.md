@@ -11,7 +11,20 @@
 [![Vitest](https://img.shields.io/badge/Vitest-2.1-729B1B?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 
 > **Live Production Deployment**:  
-> 🔗 **[https://secure-regent-frontend.vercel.app/](https://secure-regent-frontend.vercel.app/)**
+> 🔗 **[Link/](https://secure-regent-frontend.vercel.app/)**
+
+---
+
+## 👤 Developer & Contact Information
+
+| Property | Details |
+|---|---|
+| **Author** | **Karthikeya Ganugula** |
+| **Email** | [karthikeyaganugula07@gmail.com](mailto:karthikeyaganugula07@gmail.com) |
+| **Phone** | [+91 9281461306](tel:+919281461306) |
+| **LinkedIn** | [linkedin.com/in/karthikeya-ganugula](https://www.linkedin.com/in/karthikeya-ganugula) |
+| **Live App** | [https://secure-regent-frontend.vercel.app/](https://secure-regent-frontend.vercel.app/) |
+| **Country** | India 🇮🇳 |
 
 ---
 
@@ -358,18 +371,6 @@ Compiles TypeScript with strict type checking and outputs the minified productio
 
 ---
 
-## 👤 Developer & Contact Information
-
-| Property | Details |
-|---|---|
-| **Author** | **Karthikeya Ganugula** |
-| **Email** | [karthikeyaganugula07@gmail.com](mailto:karthikeyaganugula07@gmail.com) |
-| **Phone** | [+91 9281461306](tel:+919281461306) |
-| **LinkedIn** | [linkedin.com/in/karthikeya-ganugula](https://www.linkedin.com/in/karthikeya-ganugula) |
-| **Live App** | [https://secure-regent-frontend.vercel.app/](https://secure-regent-frontend.vercel.app/) |
-| **Country** | India 🇮🇳 |
-
----
 
 ## 📜 License
 Developed for the **Business Performance & Revenue Analytics Dashboard** Assignment.  
