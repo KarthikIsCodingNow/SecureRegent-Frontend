@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, Link } from "react-router-dom";
 import { List, X } from "@phosphor-icons/react";
 import { Sidebar } from "./Sidebar";
 import { GlobalFilterBar } from "./GlobalFilterBar";
@@ -70,12 +70,17 @@ export const AppLayout: React.FC = () => {
             >
               <List size={20} />
             </button>
-            <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              className="flex items-center gap-2 rounded-lg hover:opacity-85 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              aria-label={`Return to landing page - ${productName}`}
+              title="Back to landing page"
+            >
               <BrandLogo size={22} />
               <span className="font-display font-semibold text-xs tracking-widest uppercase truncate max-w-[140px]">
                 {productName}
               </span>
-            </div>
+            </Link>
           </div>
 
           <div className="flex items-center gap-2">

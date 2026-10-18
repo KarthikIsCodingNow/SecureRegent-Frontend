@@ -168,26 +168,56 @@ const DEFAULT_DARK_COLORS: ColorTokens = {
   warning: "#F5A524"
 };
 
-const PRESETS: Record<ThemePreset, { light: Partial<ColorTokens>; dark: Partial<ColorTokens>; landing?: Partial<LandingSettings> }> = {
+const PRESETS: Record<ThemePreset, { light: Partial<ColorTokens>; dark: Partial<ColorTokens>; landing: Partial<LandingSettings> }> = {
   graphite: {
     light: { ...DEFAULT_LIGHT_COLORS, accent: "#3E6AE1", accentSoft: "#E8EEFC" },
-    dark: { ...DEFAULT_DARK_COLORS, accent: "#5B83F0", accentSoft: "#1E2942" }
+    dark: { ...DEFAULT_DARK_COLORS, accent: "#5B83F0", accentSoft: "#1E2942" },
+    landing: {
+      stop1: "#F2C06A",
+      stop2: "#B8C9D6",
+      stop3: "#E8773E",
+      stop4: "#B9C7D3"
+    }
   },
   signal: {
     light: { ...DEFAULT_LIGHT_COLORS, accent: "#D9383A", accentSoft: "#FCEBEB" },
-    dark: { ...DEFAULT_DARK_COLORS, accent: "#F25557", accentSoft: "#381B1C" }
+    dark: { ...DEFAULT_DARK_COLORS, accent: "#F25557", accentSoft: "#381B1C" },
+    landing: {
+      stop1: "#FFF5F5",
+      stop2: "#FED7D7",
+      stop3: "#F98080",
+      stop4: "#FEE2E2"
+    }
   },
   forest: {
     light: { ...DEFAULT_LIGHT_COLORS, accent: "#267E54", accentSoft: "#E6F4ED" },
-    dark: { ...DEFAULT_DARK_COLORS, accent: "#3DB87E", accentSoft: "#163324" }
+    dark: { ...DEFAULT_DARK_COLORS, accent: "#3DB87E", accentSoft: "#163324" },
+    landing: {
+      stop1: "#F0FDF4",
+      stop2: "#DCFCE7",
+      stop3: "#6EE7B7",
+      stop4: "#BBF7D0"
+    }
   },
   sand: {
     light: { ...DEFAULT_LIGHT_COLORS, accent: "#A67C46", accentSoft: "#F8F3EC" },
-    dark: { ...DEFAULT_DARK_COLORS, accent: "#D4A567", accentSoft: "#362A1B" }
+    dark: { ...DEFAULT_DARK_COLORS, accent: "#D4A567", accentSoft: "#362A1B" },
+    landing: {
+      stop1: "#FDFBF7",
+      stop2: "#F6EBD9",
+      stop3: "#DFC095",
+      stop4: "#EFE0C9"
+    }
   },
   mono: {
     light: { ...DEFAULT_LIGHT_COLORS, accent: "#2D3139", accentSoft: "#EBECEE" },
-    dark: { ...DEFAULT_DARK_COLORS, accent: "#D2D6DC", accentSoft: "#252930" }
+    dark: { ...DEFAULT_DARK_COLORS, accent: "#D2D6DC", accentSoft: "#252930" },
+    landing: {
+      stop1: "#F9FAFB",
+      stop2: "#F3F4F6",
+      stop3: "#D1D5DB",
+      stop4: "#E5E7EB"
+    }
   },
   "minima-beige": {
     light: {
@@ -370,6 +400,11 @@ function applyCssTokensToDom(state: {
   root.style.setProperty("--accent-soft", colors.accentSoft);
   const accentContrast = getContrastTextColor(colors.accent);
   root.style.setProperty("--accent-contrast", accentContrast);
+  const isMinima = colors.card === "#FFF0DB" || colors.card === "#251E19";
+  const textTertiary = isDark
+    ? (isMinima ? "#A89485" : "#6E737A")
+    : (isMinima ? "#9C8370" : "#8E9196");
+  root.style.setProperty("--text-tertiary", textTertiary);
   root.style.setProperty("--positive", colors.positive);
   root.style.setProperty("--negative", colors.negative);
   root.style.setProperty("--warning", colors.warning);
@@ -530,8 +565,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
     set((state) => ({
       activePreset: preset,
-      lightColors: { ...state.lightColors, ...config.light },
-      darkColors: { ...state.darkColors, ...config.dark },
+      lightColors: { ...DEFAULT_LIGHT_COLORS, ...config.light },
+      darkColors: { ...DEFAULT_DARK_COLORS, ...config.dark },
       landing: config.landing ? { ...state.landing, ...config.landing } : state.landing,
       charts: preset === "minima-beige" ? {
         ...state.charts,

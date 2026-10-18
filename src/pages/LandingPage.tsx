@@ -20,6 +20,15 @@ import { LandingFooter } from "../components/common/SiteFooter";
 import { AnalogRollingCounter } from "../components/common/AnalogRollingCounter";
 import { TiltElement } from "../components/common/TiltElement";
 
+const DARK_LANDING_STOPS: Record<ThemePreset, { stop1: string; stop2: string; stop3: string; stop4: string }> = {
+  graphite: { stop1: "#0F1114", stop2: "#161B26", stop3: "#1E2942", stop4: "#121A2E" },
+  "minima-beige": { stop1: "#1B1613", stop2: "#251E19", stop3: "#352920", stop4: "#2A2018" },
+  signal: { stop1: "#140D0D", stop2: "#261314", stop3: "#3D181A", stop4: "#200E10" },
+  forest: { stop1: "#0C140F", stop2: "#122419", stop3: "#163825", stop4: "#0F1F15" },
+  sand: { stop1: "#14110C", stop2: "#241D14", stop3: "#382B1B", stop4: "#1E1810" },
+  mono: { stop1: "#0F1114", stop2: "#181A1F", stop3: "#252930", stop4: "#14161C" }
+};
+
 export const LandingPage: React.FC = () => {
   const landing = useSettingsStore((s) => s.landing);
   const activePreset = useSettingsStore((s) => s.activePreset);
@@ -28,6 +37,12 @@ export const LandingPage: React.FC = () => {
   const applyPreset = useSettingsStore((s) => s.applyPreset);
   const setThemeMode = useSettingsStore((s) => s.setThemeMode);
   const { dataset } = useDataStore();
+
+  const isDark =
+    themeMode === "dark" ||
+    (themeMode === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
@@ -92,35 +107,54 @@ export const LandingPage: React.FC = () => {
     return () => cancelAnimationFrame(frameId);
   }, [animationsEnabled, lightPos.active]);
 
+  const stops = isDark
+    ? (DARK_LANDING_STOPS[activePreset] || DARK_LANDING_STOPS.graphite)
+    : {
+        stop1: landing.stop1,
+        stop2: landing.stop2,
+        stop3: landing.stop3,
+        stop4: landing.stop4
+      };
+
   const gradientStyle: React.CSSProperties = {
-    backgroundColor: landing.stop1,
+    backgroundColor: stops.stop1,
     backgroundImage: animationsEnabled
       ? `
-        radial-gradient(circle 680px at ${lightPos.x}% ${lightPos.y}%, rgba(255, 255, 255, 0.44) 0%, rgba(255, 255, 255, 0.16) 28%, rgba(255, 255, 255, 0.04) 52%, transparent 74%),
-        radial-gradient(circle 850px at ${lightPos.x}% ${lightPos.y}%, ${landing.stop2} 0%, transparent 68%),
-        radial-gradient(circle 950px at ${100 - lightPos.x * 0.35}% ${100 - lightPos.y * 0.35}%, ${landing.stop3} 0%, transparent 62%),
-        radial-gradient(circle 600px at ${85 - (lightPos.x - 50) * 0.2}% ${15 - (lightPos.y - 50) * 0.2}%, ${landing.stop4} 0%, transparent 50%)
+        radial-gradient(circle 680px at ${lightPos.x}% ${lightPos.y}%, ${isDark ? "rgba(255, 255, 255, 0.18)" : "rgba(255, 255, 255, 0.28)"} 0%, ${isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.08)"} 28%, transparent 64%),
+        radial-gradient(circle 850px at ${lightPos.x}% ${lightPos.y}%, ${stops.stop2} 0%, transparent 68%),
+        radial-gradient(circle 950px at ${100 - lightPos.x * 0.35}% ${100 - lightPos.y * 0.35}%, ${stops.stop3} 0%, transparent 62%),
+        radial-gradient(circle 600px at ${85 - (lightPos.x - 50) * 0.2}% ${15 - (lightPos.y - 50) * 0.2}%, ${stops.stop4} 0%, transparent 50%)
       `
       : `
-        radial-gradient(circle at 10% 45%, ${landing.stop2} 0%, transparent 55%),
-        radial-gradient(circle at 90% 50%, ${landing.stop3} 0%, transparent 60%),
-        radial-gradient(circle at 85% 15%, ${landing.stop4} 0%, transparent 45%)
+        radial-gradient(circle at 10% 45%, ${stops.stop2} 0%, transparent 55%),
+        radial-gradient(circle at 90% 50%, ${stops.stop3} 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, ${stops.stop4} 0%, transparent 45%)
       `,
-    transition: lightPos.active ? "none" : "background-image 0.6s ease-out"
+    transition: lightPos.active ? "none" : "background-image 0.6s ease-out, background-color 0.4s ease-out"
   };
 
   const isMinimaBeige = activePreset === "minima-beige";
+
+  // Deep contrasting title colors in light mode, luminous light colors in dark mode
+  const titleColor = isDark
+    ? (isMinimaBeige ? "#FAF0E6" : "#FFFFFF")
+    : (isMinimaBeige ? "#2D231A" : "#171A20");
+
+  const titleShadow = isDark
+    ? `${(-titleOffset.dx * 0.03).toFixed(1)}px ${(-titleOffset.dy * 0.03 + 3).toFixed(1)}px ${(8 + titleProximity * 14).toFixed(1)}px rgba(0, 0, 0, 0.5), 0 0 ${(titleProximity * 28).toFixed(1)}px ${isMinimaBeige ? "rgba(217, 185, 155, 0.45)" : "rgba(255, 255, 255, 0.55)"}`
+    : `${(-titleOffset.dx * 0.03).toFixed(1)}px ${(-titleOffset.dy * 0.03 + 3).toFixed(1)}px ${(6 + titleProximity * 8).toFixed(1)}px rgba(0, 0, 0, 0.14), 0 0 ${(titleProximity * 16).toFixed(1)}px ${isMinimaBeige ? "rgba(158, 98, 56, 0.15)" : "rgba(0, 0, 0, 0.06)"}`;
+
   const reactiveTitleStyle: React.CSSProperties = animationsEnabled
     ? {
-        color: isMinimaBeige ? "#FAF0E6" : "#FFFFFF",
+        color: titleColor,
         transform: `perspective(900px) rotateX(${(titleOffset.dy * 0.012).toFixed(2)}deg) rotateY(${(-titleOffset.dx * 0.012).toFixed(2)}deg) scale(${(1 + titleProximity * 0.02).toFixed(3)})`,
-        textShadow: `${(-titleOffset.dx * 0.03).toFixed(1)}px ${(-titleOffset.dy * 0.03 + 3).toFixed(1)}px ${(8 + titleProximity * 14).toFixed(1)}px rgba(0, 0, 0, 0.26), 0 0 ${(titleProximity * 28).toFixed(1)}px rgba(255, 255, 255, 0.55)`,
+        textShadow: titleShadow,
         transition: lightPos.active ? "transform 0.08s ease-out, text-shadow 0.1s ease-out" : "transform 0.5s ease-out, text-shadow 0.5s ease-out",
         willChange: "transform, text-shadow"
       }
     : {
-        color: isMinimaBeige ? "#FAF0E6" : "#FFFFFF",
-        textShadow: "0 4px 16px rgba(0, 0, 0, 0.2)"
+        color: titleColor,
+        textShadow: isDark ? "0 4px 16px rgba(0, 0, 0, 0.45)" : "0 2px 8px rgba(0, 0, 0, 0.1)"
       };
 
   const capabilities = [
@@ -214,7 +248,12 @@ export const LandingPage: React.FC = () => {
         {/* Blushéra Inspired Frosted Glassmorphism Header */}
         <header className="relative z-30 max-w-7xl mx-auto w-full pt-2">
           <div className="bg-card/75 backdrop-blur-xl border border-hairline/80 rounded-full px-4 sm:px-6 py-2.5 sm:py-3 shadow-lg flex items-center justify-between transition-all">
-            <Link to="/" className="flex items-center gap-2.5 group">
+            <Link
+              to="/"
+              className="flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full px-1"
+              aria-label={`Landing page - ${landing.productName}`}
+              title="Landing page"
+            >
               <BrandLogo size={28} className="transition-transform group-hover:scale-105" />
               <span className="font-display font-semibold text-xs tracking-[0.25em] uppercase text-text-primary">
                 {landing.productName}
@@ -297,7 +336,7 @@ export const LandingPage: React.FC = () => {
                       <span className="text-[11px] text-text-secondary">Dark Mode</span>
                       <button
                         onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
-                        className="px-2.5 py-1 rounded-full text-[11px] bg-canvas border border-hairline hover:bg-hairline/30 transition-all font-medium"
+                        className="px-2.5 py-1 rounded-full text-[11px] bg-canvas border border-hairline hover:bg-hairline/30 text-text-primary transition-all font-medium"
                       >
                         {themeMode === "dark" ? "Dark" : "Light"}
                       </button>
@@ -421,7 +460,7 @@ export const LandingPage: React.FC = () => {
                   <span className="text-xs text-text-secondary">Appearance Mode</span>
                   <button
                     onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
-                    className="px-3 py-1.5 rounded-full text-xs bg-canvas border border-hairline font-medium"
+                    className="px-3 py-1.5 rounded-full text-xs bg-canvas border border-hairline font-medium text-text-primary"
                   >
                     {themeMode === "dark" ? "🌙 Dark" : "☀️ Light"}
                   </button>

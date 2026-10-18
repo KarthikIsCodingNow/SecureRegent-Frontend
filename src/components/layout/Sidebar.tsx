@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   ChartLineUp,
   UsersThree,
@@ -46,12 +46,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "", onItemClick })
       )}
     >
       <div>
-        <div className="flex items-center gap-2.5 px-3 py-2 mb-8">
-          <BrandLogo size={26} />
-          <span className="font-display font-semibold text-xs tracking-[0.2em] uppercase text-text-primary truncate">
+        <Link
+          to="/"
+          className="flex items-center gap-2.5 px-3 py-2 mb-8 rounded-2xl hover:bg-canvas transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          aria-label={`Return to landing page - ${productName}`}
+          title="Back to landing page"
+        >
+          <BrandLogo size={26} className="transition-transform group-hover:scale-105" />
+          <span className="font-display font-semibold text-xs tracking-[0.2em] uppercase text-text-primary truncate group-hover:text-accent transition-colors">
             {productName}
           </span>
-        </div>
+        </Link>
 
         <nav className="space-y-1">
           {mainNavItems.map((item) => (
