@@ -11,8 +11,8 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ open, on
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[85vh] bg-card rounded-card shadow-2xl z-50 flex flex-col border border-hairline outline-none animate-in fade-in-50 zoom-in-95 duration-200">
+        <Dialog.Overlay className="genie-backdrop fixed inset-0 z-50 transition-all" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[85vh] bg-card rounded-card shadow-popped-modal z-50 flex flex-col border border-hairline outline-none animate-in fade-in-50 zoom-in-95 duration-200">
           {/* Header */}
           <div className="p-6 border-b border-hairline flex items-center justify-between shrink-0 bg-card">
             <div className="flex items-center gap-3">

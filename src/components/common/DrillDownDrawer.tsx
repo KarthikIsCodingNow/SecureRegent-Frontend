@@ -33,6 +33,7 @@ interface DrillDownDrawerProps {
   title: string;
   subtitle?: string;
   items: DrillDownItem[];
+  originRect?: { x: number; y: number; width?: number; height?: number } | null;
 }
 
 export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
@@ -40,7 +41,8 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
   onOpenChange,
   title,
   subtitle,
-  items
+  items,
+  originRect
 }) => {
   const navigate = useNavigate();
   const themeMode = useSettingsStore((s) => s.themeMode);
@@ -289,15 +291,33 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
     return list;
   }, [items, searchTerm, selectedStatus]);
 
+  const originStyle = useMemo(() => {
+    if (typeof window === "undefined") {
+      return {
+        "--origin-x": "50%",
+        "--origin-y": "35%"
+      } as React.CSSProperties;
+    }
+    const originX = originRect?.x ?? (window.innerWidth / 2);
+    const originY = originRect?.y ?? (window.innerHeight * 0.35);
+    const percentX = Math.round(Math.max(5, Math.min(95, (originX / window.innerWidth) * 100)));
+    const percentY = Math.round(Math.max(5, Math.min(95, (originY / window.innerHeight) * 100)));
+    return {
+      "--origin-x": `${percentX}%`,
+      "--origin-y": `${percentY}%`
+    } as React.CSSProperties;
+  }, [open, originRect]);
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        {/* Soft blur backdrop overlay */}
-        <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-md z-40 transition-opacity animate-in fade-in duration-300" />
+        {/* Rich blurred background backdrop */}
+        <Dialog.Overlay className="genie-backdrop fixed inset-0 z-40 transition-all" />
 
-        {/* Modal expand container spanning almost full screen */}
+        {/* Modal expand container spanning almost full screen with iOS genie origin */}
         <Dialog.Content
-          className="fixed inset-2 sm:inset-4 md:inset-6 lg:inset-8 z-50 flex items-center justify-center outline-none pointer-events-none"
+          style={originStyle}
+          className="genie-content fixed inset-2 sm:inset-4 md:inset-6 lg:inset-8 z-50 flex items-center justify-center outline-none pointer-events-none"
           aria-describedby={subtitle ? "drilldown-modal-subtitle" : undefined}
         >
           <div className="w-full h-full max-w-7xl mx-auto flex flex-col lg:flex-row items-stretch gap-4 md:gap-5 pointer-events-auto overflow-y-auto lg:overflow-hidden p-1 sm:p-2">
@@ -305,8 +325,9 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
             {/* =========================================================================
                 FLOATING WINDOW 1: ANALYTICS GRAPH & TITLE WINDOW
                 Slightly larger than regular dashboard boxes (~480-520px on desktop)
+                Almost opaque, solid card with popped-up elevation shadow
                ========================================================================= */}
-            <div className="w-full lg:w-[480px] xl:w-[520px] bg-card/95 backdrop-blur-xl border border-hairline rounded-[24px] sm:rounded-[28px] shadow-2xl flex flex-col overflow-y-auto shrink-0 animate-in zoom-in-95 fade-in duration-300 p-5 sm:p-6">
+            <div className="w-full lg:w-[480px] xl:w-[520px] bg-card border border-hairline rounded-[24px] sm:rounded-[28px] shadow-popped-modal flex flex-col overflow-y-auto shrink-0 p-5 sm:p-6 genie-window-left">
               {/* Top row badge and mobile close */}
               <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent">
@@ -346,7 +367,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
 
               {/* Analytical Summary Metric Tiles */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-4">
-                <div className="p-3 bg-canvas/60 rounded-2xl border border-hairline">
+                <div className="p-3 bg-canvas rounded-2xl border border-hairline shadow-sm">
                   <div className="text-[10px] font-semibold text-text-tertiary uppercase flex items-center gap-1">
                     <ListChecks size={12} weight="bold" />
                     <span>Total Volume</span>
@@ -357,7 +378,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
                 </div>
 
                 {hasAmounts ? (
-                  <div className="p-3 bg-canvas/60 rounded-2xl border border-hairline">
+                  <div className="p-3 bg-canvas rounded-2xl border border-hairline shadow-sm">
                     <div className="text-[10px] font-semibold text-text-tertiary uppercase flex items-center gap-1">
                       <Coins size={12} weight="bold" />
                       <span>Total Realized</span>
@@ -367,7 +388,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3 bg-canvas/60 rounded-2xl border border-hairline">
+                  <div className="p-3 bg-canvas rounded-2xl border border-hairline shadow-sm">
                     <div className="text-[10px] font-semibold text-text-tertiary uppercase flex items-center gap-1">
                       <CalendarBlank size={12} weight="bold" />
                       <span>Peak Date</span>
@@ -378,7 +399,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
                   </div>
                 )}
 
-                <div className="p-3 bg-canvas/60 rounded-2xl border border-hairline col-span-2 sm:col-span-1">
+                <div className="p-3 bg-canvas rounded-2xl border border-hairline shadow-sm col-span-2 sm:col-span-1">
                   <div className="text-[10px] font-semibold text-text-tertiary uppercase">
                     Top Segment
                   </div>
@@ -424,7 +445,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
               </div>
 
               {/* Analytical ECharts Container */}
-              <div className="bg-canvas/40 border border-hairline rounded-2xl p-2.5 shadow-inner w-full min-h-[220px]">
+              <div className="bg-canvas/90 dark:bg-canvas/40 border border-hairline rounded-2xl p-2.5 shadow-inner w-full min-h-[220px]">
                 <BaseChart
                   option={chartOption}
                   height={220}
@@ -452,7 +473,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
                             isSelected
                               ? "bg-accent text-accent-contrast border-accent shadow-sm"
-                              : "bg-canvas hover:bg-canvas/80 border-hairline text-text-secondary hover:text-text-primary"
+                              : "bg-canvas hover:bg-canvas/90 border-hairline text-text-secondary hover:text-text-primary"
                           }`}
                         >
                           <span
@@ -478,8 +499,9 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
             {/* =========================================================================
                 FLOATING WINDOW 2: TOP-TO-BOTTOM RECORDS / VALUES WINDOW
                 Full height panel presenting the list of records with search & filters
+                Almost opaque, solid card with popped-up elevation shadow
                ========================================================================= */}
-            <div className="flex-1 w-full h-full min-h-[500px] lg:min-h-0 bg-card/95 backdrop-blur-xl border border-hairline rounded-[24px] sm:rounded-[28px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300 delay-75">
+            <div className="flex-1 w-full h-full min-h-[500px] lg:min-h-0 bg-card border border-hairline rounded-[24px] sm:rounded-[28px] shadow-popped-modal flex flex-col overflow-hidden genie-window-right">
               
               {/* Header: Title, record count badge, and close button */}
               <div className="p-4 sm:p-5 border-b border-hairline bg-card flex items-center justify-between gap-4 shrink-0">
@@ -513,7 +535,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
               </div>
 
               {/* Filter and Search Bar */}
-              <div className="p-3 sm:p-4 bg-canvas/40 border-b border-hairline shrink-0 flex flex-wrap items-center justify-between gap-2.5">
+              <div className="p-3 sm:p-4 bg-canvas/80 dark:bg-canvas/40 border-b border-hairline shrink-0 flex flex-wrap items-center justify-between gap-2.5">
                 <div className="relative flex-1 min-w-[200px] max-w-md">
                   <MagnifyingGlass
                     size={15}
@@ -636,7 +658,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
                             {item.date}
                           </div>
                         </div>
-                        <div className="w-8 h-8 rounded-full bg-canvas/60 group-hover:bg-accent group-hover:text-accent-contrast text-text-tertiary flex items-center justify-center transition-all shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-canvas group-hover:bg-accent group-hover:text-accent-contrast text-text-tertiary flex items-center justify-center transition-all shrink-0">
                           <ArrowRight
                             size={15}
                             className="group-hover:translate-x-0.5 transition-transform"
@@ -649,7 +671,7 @@ export const DrillDownDrawer: React.FC<DrillDownDrawerProps> = ({
               </div>
 
               {/* Bottom footer bar */}
-              <div className="px-4 py-3 border-t border-hairline bg-card/60 flex items-center justify-between text-xs text-text-tertiary shrink-0">
+              <div className="px-4 py-3 border-t border-hairline bg-card flex items-center justify-between text-xs text-text-tertiary shrink-0">
                 <span>
                   Showing {filteredItems.length} of {items.length} records
                 </span>

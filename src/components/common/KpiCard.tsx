@@ -42,18 +42,41 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   const areaPoints = `0,${height} ${points} ${width},${height}`;
   const displayString = formattedValue !== undefined ? formattedValue : String(value);
 
+  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+    if (!onClick) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (typeof window !== "undefined") {
+      (window as unknown as { __lastDrillDownOrigin?: { x: number; y: number; width?: number; height?: number } }).__lastDrillDownOrigin = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        width: rect.width,
+        height: rect.height
+      };
+    }
+    onClick();
+  };
+
   return (
     <TiltElement
       maxTilt={9}
       scale={onClick ? 1.02 : 1.0}
       elevation={10}
       onLongPress={onClick}
-      onClick={onClick}
+      onClick={onClick ? handleClick : undefined}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
         if (onClick && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
+          const rect = e.currentTarget.getBoundingClientRect();
+          if (typeof window !== "undefined") {
+            (window as unknown as { __lastDrillDownOrigin?: { x: number; y: number; width?: number; height?: number } }).__lastDrillDownOrigin = {
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+              width: rect.width,
+              height: rect.height
+            };
+          }
           onClick();
         }
       }}

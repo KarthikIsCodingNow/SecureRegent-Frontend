@@ -6,7 +6,14 @@ import { useSettingsStore } from "../store/settingsStore";
 import { computeMetricDeltas, computeMetrics, MetricDeltas, MetricSummary } from "../domain/metrics";
 import { DrillDownDrawer, DrillDownItem } from "../components/common/DrillDownDrawer";
 
-interface FilterContextType {
+export interface DrillDownOrigin {
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+}
+
+export interface FilterContextType {
   filter: FilterState;
   setFilter: (patch: Partial<FilterState>) => void;
   resetFilter: () => void;
@@ -17,10 +24,43 @@ interface FilterContextType {
   currentMetrics: MetricSummary;
   previousMetrics: MetricSummary;
   deltas: MetricDeltas;
-  openDrillDown: (title: string, subtitle: string, items: DrillDownItem[]) => void;
+  openDrillDown: (
+    title: string,
+    subtitle: string,
+    items: DrillDownItem[],
+    origin?: DrillDownOrigin | null
+  ) => void;
 }
 
 const FilterContext = createContext<FilterContextType | null>(null);
+
+let lastPointerOrigin: DrillDownOrigin | null = null;
+
+if (typeof window !== "undefined") {
+  window.addEventListener(
+    "pointerdown",
+    (e) => {
+      const target = e.target as HTMLElement | null;
+      const cardEl = target?.closest('[role="button"], button, .group, [tabindex="0"]');
+      if (cardEl) {
+        const rect = cardEl.getBoundingClientRect();
+        lastPointerOrigin = {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+          width: rect.width,
+          height: rect.height
+        };
+      } else {
+        lastPointerOrigin = {
+          x: e.clientX,
+          y: e.clientY
+        };
+      }
+    },
+    { capture: true, passive: true }
+  );
+}
+
 
 const DEFAULT_FILTER: FilterState = {
   timeframe: "last30",
@@ -99,14 +139,26 @@ export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     title: string;
     subtitle: string;
     items: DrillDownItem[];
+    origin?: DrillDownOrigin | null;
   }>({
     title: "",
     subtitle: "",
-    items: []
+    items: [],
+    origin: null
   });
 
-  const openDrillDown = (title: string, subtitle: string, items: DrillDownItem[]) => {
-    setDrawerData({ title, subtitle, items });
+  const openDrillDown = (
+    title: string,
+    subtitle: string,
+    items: DrillDownItem[],
+    origin?: DrillDownOrigin | null
+  ) => {
+    const resolvedOrigin =
+      origin ||
+      (typeof window !== "undefined" && (window as unknown as { __lastDrillDownOrigin?: DrillDownOrigin }).__lastDrillDownOrigin) ||
+      lastPointerOrigin ||
+      null;
+    setDrawerData({ title, subtitle, items, origin: resolvedOrigin });
     setDrawerOpen(true);
   };
 
@@ -133,6 +185,7 @@ export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         title={drawerData.title}
         subtitle={drawerData.subtitle}
         items={drawerData.items}
+        originRect={drawerData.origin}
       />
     </FilterContext.Provider>
   );
